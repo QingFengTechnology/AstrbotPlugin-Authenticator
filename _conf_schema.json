@@ -1,0 +1,121 @@
+{
+  "whitelist_groups": {
+    "description": "群聊白名单",
+    "type": "list",
+    "items": {
+      "type": "int"
+    },
+    "default": [],
+    "hint": "仅在这些群聊中启用验证功能。留空则在所有群聊中启用。"
+  },
+  "verification_timeout": {
+    "description": "验证超时时间",
+    "type": "int",
+    "default": 300,
+    "hint": "成员必须在此时间内完成验证，否则将被踢出，单位为秒。"
+  },
+  "kick_countdown_warning_time": {
+    "description": "踢出前警告倒计时",
+    "type": "int",
+    "default": 60,
+    "hint": "在验证超时前多少秒提示成员尽快验证。设为0可禁用，单位为秒。"
+  },
+  "kick_delay": {
+    "description": "验证超时后踢出延迟",
+    "type": "int",
+    "default": 5,
+    "hint": "发送验证超时消息后，等待多少秒再执行踢出操作，单位为秒。"
+  },
+  "new_member_prompt": {
+    "description": "成员入群提示语",
+    "type": "string",
+    "default": "{at_user} 欢迎加入本群！请在 {timeout} 分钟内 @我 并回答下面的问题以完成验证：\n{question}",
+    "hint": "成员入群时发送的验证信息。可用变量: {at_user}, {member_name}, {question}, {timeout}。"
+  },
+  "welcome_message": {
+    "description": "验证成功提示语",
+    "type": "string",
+    "default": "{at_user} 验证成功，欢迎你的加入！",
+    "hint": "成员验证成功后发送的消息。可用变量: {at_user}, {member_name}。"
+  },
+  "wrong_answer_prompt": {
+    "description": "答案错误提示语",
+    "type": "string",
+    "default": "{at_user} 答案错误，请重新回答验证。这是你的新问题：\n{question}",
+    "hint": "成员回答错误后发送的消息，之后会自动生成新问题。可用变量: {at_user}, {question}。"
+  },
+  "countdown_warning_prompt": {
+    "description": "超时警告提示语",
+    "type": "string",
+    "default": "{at_user} 验证即将超时，请尽快查看我（BOT）的验证消息进行人机验证！",
+    "hint": "在验证即将超时前发送的警告。可用变量: {at_user}, {member_name}。"
+  },
+  "disable_failure_message": {
+    "description": "禁用验证超时提示语",
+    "type": "bool",
+    "default": false,
+    "hint": "如果启用，将不会发送验证超时提示语。"
+  },
+  "disable_kick_message": {
+    "description": "禁用最终踢出提示语",
+    "type": "bool",
+    "default": false,
+    "hint": "如果启用，将不会发送最终踢出提示语。"
+  },
+  "failure_message": {
+    "description": "验证超时提示语",
+    "type": "string",
+    "default": "{at_user} 验证超时，你将在 {countdown} 秒后被请出本群。",
+    "hint": "成员因超时而验证失败后，踢出前发送的消息。可用变量: {at_user}, {member_name}, {countdown}。"
+  },
+  "kick_message": {
+    "description": "最终踢出提示语",
+    "type": "string",
+    "default": "{at_user} 因未在规定时间内完成验证，已被请出本群。",
+    "hint": "成员被踢出后发送的公开消息。可用变量: {at_user}, {member_name}。"
+  },
+  "accept_keywords": {
+    "type": "list",
+    "title": "自动同意关键词",
+    "description": "当申请消息中包含这些关键词时，将自动同意申请",
+    "default": ["给了", "一键三连了", "三连了"],
+    "items": {
+      "type": "string"
+    }
+  },
+  "reject_keywords": {
+    "type": "list",
+    "title": "自动拒绝关键词",
+    "description": "当申请消息中包含这些关键词时，将自动拒绝申请",
+    "default": ["拒绝", "不同意", "reject", "deny"],
+    "items": {
+      "type": "string"
+    }
+  },
+  "auto_accept": {
+    "type": "bool",
+    "title": "自动同意所有申请",
+    "description": "启用后将自动同意所有入群申请，优先级高于关键词",
+    "default": false
+  },
+  "auto_reject": {
+    "type": "bool",
+    "title": "自动拒绝所有申请",
+    "description": "启用后将自动拒绝所有入群申请，优先级低于自动同意但高于关键词",
+    "default": false
+  },
+  "reject_reason": {
+    "type": "string",
+    "title": "默认拒绝理由",
+    "description": "自动拒绝申请时使用的理由",
+    "default": "申请被拒绝"
+  },
+  "delay_seconds": {
+    "type": "int",
+    "title": "延迟处理时间",
+    "description": "处理入群申请前等待的时间（秒），设置为0表示不延迟",
+    "default": 0,
+    "min": 0,
+    "max": 300
+  }
+}
