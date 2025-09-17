@@ -8,7 +8,7 @@ from typing import Dict, Any, Optional
 from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent
 
-from .apifox_model import ApifoxModel
+from .function.apifox_model import ApifoxModel
 
 
 class AppReview:

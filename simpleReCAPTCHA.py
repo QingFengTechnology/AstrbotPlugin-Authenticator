@@ -10,7 +10,7 @@ from typing import Dict, Any, Tuple, Optional
 from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent
 
-from .utils import safe_format
+from .function.utils import safe_format
 
 
 class ReCAPTCHA:

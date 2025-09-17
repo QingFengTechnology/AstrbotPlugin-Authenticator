@@ -4,8 +4,8 @@ from astrbot.api import logger
 from astrbot.api.event import filter, AstrMessageEvent
 from astrbot.api.star import Context, Star
 
-from .appreview import AppReview
-from .recaptcha import ReCAPTCHA
+from .automaticReview import AppReview
+from .simpleReCAPTCHA import ReCAPTCHA
 
 # 主类定义
 class AuthenticatorPlugin(Star):
