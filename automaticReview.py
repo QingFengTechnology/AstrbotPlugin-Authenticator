@@ -34,12 +34,6 @@ class AppReview:
         self.reject_keywords = keywords_config["KeywordsConfig_RejectKeywords"]
         self.reject_reason = keywords_config["KeywordsConfig_RejectReason"]
         
-        # 获取自动审核配置
-        auto_review_config = automatic_review["AutomaticReview_AutoReviewConfig"]
-        auto_review_enable = auto_review_config["AutoReviewConfig_Enable"]
-        self.auto_accept = auto_review_enable == "True"
-        self.auto_reject = auto_review_enable == "False"
-        
         # 获取其他配置
         self.delay_seconds = automatic_review["AutomaticReview_DelaySeconds"]
         self.whitelist_groups = config["WhitelistGroups"]
@@ -121,23 +115,6 @@ class AppReview:
         
         # 获取延迟时间
         delay_seconds = self.delay_seconds
-        
-        # 自动处理逻辑
-        if self.auto_accept:
-            if delay_seconds > 0:
-                logger.info(f"[Authenticator] 将在 {delay_seconds} 秒后同意用户 {user_id} 加入群 {group_id} 的请求。")
-                await asyncio.sleep(delay_seconds)
-            await self.approve_request(event, flag, True)
-            logger.info(f"[Authenticator] 已同意用户 {user_id} 加入群 {group_id} 的请求。")
-            return
-        
-        if self.auto_reject:
-            if delay_seconds > 0:
-                logger.info(f"[Authenticator] 将在 {delay_seconds} 秒后拒绝用户 {user_id} 加入群 {group_id} 的请求。")
-                await asyncio.sleep(delay_seconds)
-            await self.approve_request(event, flag, False, self.reject_reason)
-            logger.info(f"[Authenticator] 已拒绝用户 {user_id} 加入群 {group_id} 的请求。")
-            return
         
         # 根据关键词处理，优先检查拒绝关键词
         for keyword in self.reject_keywords:

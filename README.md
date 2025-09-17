@@ -8,7 +8,6 @@
 - 支持群聊白名单，避免在意外群聊中触发验证
 - 模块化设计，可自由开关各个功能
 - 基于关键词的加群请求审核
-  - 也同样支持不验证自动通过/拒绝所有请求
   - 支持设定延迟，降低风控风险
 - 通过简易验证判断入群者是否为人机
 
@@ -65,29 +64,6 @@
           "KeywordsConfig_RejectReason": {
             "type": "string",
             "description": "拒绝申请时使用的理由",
-            "default": "申请被拒绝。"
-          }
-        }
-      },
-      "AutomaticReview_AutoReviewConfig": {
-        "type": "object",
-        "description": "自动审核相关配置",
-        "items": {
-          "AutoReviewConfig_Enable": {
-            "type": "string",
-            "description": "是否启用该功能",
-            "hint": "配置为`None`时不启用该功能；`False`表示自动拒绝所有请求；`True`表示自动同意所有请求。",
-            "options": [
-              "None",
-              "True",
-              "False"
-            ],
-            "default": "None"
-          },
-          "AutoReviewConfig_RejectReason": {
-            "type": "string",
-            "description": "自动拒绝理由",
-            "hint": "自动拒绝申请时所使用的理由。",
             "default": "申请被拒绝。"
           }
         }
