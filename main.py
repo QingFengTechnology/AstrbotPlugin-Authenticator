@@ -18,6 +18,7 @@ class AuthenticatorPlugin(Star):
         self.appreview = AppReview(config)
         
         self._apply_monkey_patch()
+        logger.debug("[Authenticator] 插件初始化完成。")
     
     def _apply_monkey_patch(self):
         """应用monkey patch确保session_id属性存在"""
