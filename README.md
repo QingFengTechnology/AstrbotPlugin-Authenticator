@@ -213,4 +213,4 @@
 
 - **[DeepSeek](https://chat.deepseek.com)** 本项目大部分的代码都是 AI 编写，后续维护也交由 AI 维护。
 - **[qiqi55488](https://github.com/qiqi55488)** 本项目主要功能模块之一参考自[这位开发者的插件](https://github.com/qiqi55488/astrbot_plugin_appreview)。
-- **[huntuo146](https://github.com/huntuo146)** 项目主要功能模块之一参考自[这位开发者的插件](https://github.com/huntuo146/astrbot_plugin_Group-Verification_PRO)。
+- **[huntuo146](https://github.com/huntuo146)** 本项目主要功能模块之一参考自[这位开发者的插件](https://github.com/huntuo146/astrbot_plugin_Group-Verification_PRO)。
