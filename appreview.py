@@ -25,13 +25,24 @@ class AppReview:
     
     def _load_config(self, config: Dict[str, Any]):
         """加载加群审核相关配置"""
-        self.accept_keywords = config.get("accept_keywords")
-        self.reject_keywords = config.get("reject_keywords")
-        self.auto_accept = config.get("auto_accept")
-        self.auto_reject = config.get("auto_reject")
-        self.reject_reason = config.get("reject_reason")
-        self.delay_seconds = config.get("delay_seconds")
-        self.whitelist_groups = config.get("whitelist_groups")
+        # 从新的嵌套配置结构中获取配置
+        automatic_review = config["AutomaticReview"]
+        
+        # 获取关键词配置（从items中获取）
+        keywords_config = automatic_review["items"]["AutomaticReview_KeywordsConfig"]
+        self.accept_keywords = keywords_config["items"]["KeywordsConfig_AcceptKeywords"]
+        self.reject_keywords = keywords_config["items"]["KeywordsConfig_RejectKeywords"]
+        self.reject_reason = keywords_config["items"]["KeywordsConfig_RejectReason"]
+        
+        # 获取自动审核配置（从items中获取）
+        auto_review_config = automatic_review["items"]["AutomaticReview_AutoReviewConfig"]
+        auto_review_enable = auto_review_config["items"]["AutoReviewConfig_Enable"]
+        self.auto_accept = auto_review_enable == "True"
+        self.auto_reject = auto_review_enable == "False"
+        
+        # 获取其他配置
+        self.delay_seconds = automatic_review["items"]["AutomaticReview_DelaySeconds"]
+        self.whitelist_groups = config["WhitelistGroups"]
     
     async def approve_request(self, event: AstrMessageEvent, flag: str, 
                              approve: bool = True, reason: str = "") -> bool:

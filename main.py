@@ -13,7 +13,7 @@ class AuthenticatorPlugin(Star):
         super().__init__(context)
         self.context = context
         
-        # 初始化模块
+        # 初始化模块 - 传递完整的配置对象
         self.recaptcha = ReCAPTCHA(config)
         self.appreview = AppReview(config)
         

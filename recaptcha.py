@@ -28,18 +28,35 @@ class ReCAPTCHA:
     
     def _load_config(self, config: Dict[str, Any]):
         """加载验证码验证相关配置"""
-        self.verification_timeout = config.get("verification_timeout")
-        self.kick_countdown_warning_time = config.get("kick_countdown_warning_time")
-        self.kick_delay = config.get("kick_delay")
-        self.new_member_prompt = config.get("new_member_prompt")
-        self.welcome_message = config.get("welcome_message")
-        self.wrong_answer_prompt = config.get("wrong_answer_prompt")
-        self.countdown_warning_prompt = config.get("countdown_warning_prompt")
-        self.failure_message = config.get("failure_message")
-        self.kick_message = config.get("kick_message")
-        self.disable_failure_message = config.get("disable_failure_message")
-        self.disable_kick_message = config.get("disable_kick_message")
-        self.whitelist_groups = config.get("whitelist_groups")
+        # 从新的嵌套配置结构中获取配置
+        recaptcha_config = config["SimpleReCAPTCHA"]
+        
+        # 获取基础配置（从items中获取）
+        self.verification_timeout = recaptcha_config["items"]["SimpleReCAPTCHA_VerificationTimeout"]
+        self.kick_delay = recaptcha_config["items"]["SimpleReCAPTCHA_KickDelay"]
+        
+        # 获取消息配置（从items中获取）
+        message_config = recaptcha_config["items"]["SimpleReCAPTCHA_MessageConfig"]
+        self.new_member_prompt = message_config["items"]["MessageConfig_Join"]
+        self.welcome_message = message_config["items"]["MessageConfig_Success"]
+        self.wrong_answer_prompt = message_config["items"]["MessageConfig_Wrong"]
+        
+        # 获取倒计时警告配置（从items中获取）
+        countdown_config = message_config["items"]["MessageConfig_CountdownWarningConfig"]
+        self.kick_countdown_warning_time = countdown_config["items"]["CountdownWarningConfig_Time"]
+        self.countdown_warning_prompt = countdown_config["items"]["CountdownWarningConfig_Message"]
+        
+        # 获取失败配置（从items中获取）
+        failure_config = message_config["items"]["MessageConfig_FailureConfig"]
+        self.disable_failure_message = not failure_config["items"]["FailureConfig_Enable"]
+        self.failure_message = failure_config["items"]["FailureConfig_Message"]
+        
+        # 获取踢出配置（从items中获取）
+        kick_config = message_config["items"]["MessageConfig_KickConfig"]
+        self.disable_kick_message = not kick_config["items"]["KickConfig_Enable"]
+        self.kick_message = kick_config["items"]["KickConfig_Message"]
+        
+        self.whitelist_groups = config["WhitelistGroups"]
     
     def generate_math_problem(self) -> Tuple[str, int]:
         """
