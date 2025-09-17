@@ -57,6 +57,6 @@ class AuthenticatorPlugin(Star):
 
     async def terminate(self):
         """插件被卸载/停用时调用"""
-        logger.info("Authenticator插件已停用")
         # 清理所有待处理的验证任务
         self.recaptcha.cleanup()
+        logger.debug("[Authenticator] 插件已停止。")

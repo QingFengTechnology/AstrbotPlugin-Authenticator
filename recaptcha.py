@@ -28,18 +28,18 @@ class ReCAPTCHA:
     
     def _load_config(self, config: Dict[str, Any]):
         """加载验证码验证相关配置"""
-        self.verification_timeout = config.get("verification_timeout", 300)
-        self.kick_countdown_warning_time = config.get("kick_countdown_warning_time", 60)
-        self.kick_delay = config.get("kick_delay", 5)
-        self.new_member_prompt = config.get("new_member_prompt", "")
-        self.welcome_message = config.get("welcome_message", "")
-        self.wrong_answer_prompt = config.get("wrong_answer_prompt", "")
-        self.countdown_warning_prompt = config.get("countdown_warning_prompt", "")
-        self.failure_message = config.get("failure_message", "")
-        self.kick_message = config.get("kick_message", "")
-        self.disable_failure_message = config.get("disable_failure_message", False)
-        self.disable_kick_message = config.get("disable_kick_message", False)
-        self.whitelist_groups = config.get("whitelist_groups", [])
+        self.verification_timeout = config.get("verification_timeout")
+        self.kick_countdown_warning_time = config.get("kick_countdown_warning_time")
+        self.kick_delay = config.get("kick_delay")
+        self.new_member_prompt = config.get("new_member_prompt")
+        self.welcome_message = config.get("welcome_message")
+        self.wrong_answer_prompt = config.get("wrong_answer_prompt")
+        self.countdown_warning_prompt = config.get("countdown_warning_prompt")
+        self.failure_message = config.get("failure_message")
+        self.kick_message = config.get("kick_message")
+        self.disable_failure_message = config.get("disable_failure_message")
+        self.disable_kick_message = config.get("disable_kick_message")
+        self.whitelist_groups = config.get("whitelist_groups")
     
     def generate_math_problem(self) -> Tuple[str, int]:
         """
@@ -163,7 +163,7 @@ class ReCAPTCHA:
                 old_task.cancel()
 
         question, answer = self.generate_math_problem()
-        logger.info(f"[Authenticator] 为用户 {uid} 在群 {gid} 生成验证问题: {question} (答案: {answer})")
+        logger.info(f"[Authenticator] 为用户 {uid} 在群 {gid} 生成验证问题: {question} (答案: {answer})。")
 
         nickname = uid
         try:
@@ -259,7 +259,7 @@ class ReCAPTCHA:
         if uid in self.pending:
             self.pending[uid]["task"].cancel()
             self.pending.pop(uid, None)
-            logger.debug(f"[Authenticator] 待验证用户 {uid} 已离开，清理其验证状态。")
+            logger.info(f"[Authenticator] 待验证用户 {uid} 已离开，清理其验证状态。")
     
     def cleanup(self):
         """清理所有待处理的验证任务"""

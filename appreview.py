@@ -25,13 +25,13 @@ class AppReview:
     
     def _load_config(self, config: Dict[str, Any]):
         """加载加群审核相关配置"""
-        self.accept_keywords = config.get("accept_keywords", [])
-        self.reject_keywords = config.get("reject_keywords", [])
-        self.auto_accept = config.get("auto_accept", False)
-        self.auto_reject = config.get("auto_reject", False)
-        self.reject_reason = config.get("reject_reason", "申请被拒绝")
-        self.delay_seconds = config.get("delay_seconds", 0)
-        self.whitelist_groups = config.get("whitelist_groups", [])
+        self.accept_keywords = config.get("accept_keywords")
+        self.reject_keywords = config.get("reject_keywords")
+        self.auto_accept = config.get("auto_accept")
+        self.auto_reject = config.get("auto_reject")
+        self.reject_reason = config.get("reject_reason")
+        self.delay_seconds = config.get("delay_seconds")
+        self.whitelist_groups = config.get("whitelist_groups")
     
     async def approve_request(self, event: AstrMessageEvent, flag: str, 
                              approve: bool = True, reason: str = "") -> bool:
@@ -106,7 +106,7 @@ class AppReview:
             logger.debug(f"[Authenticator] 群 {group_id} 不在白名单内，跳过加群请求处理。")
             return
         
-        logger.info(f"[Authenticator] 收到加群请求: 用户ID={user_id}, 群ID={group_id}, 验证信息={comment}")
+        logger.info(f"[Authenticator] 收到加群请求: 用户ID={user_id}, 群ID={group_id}, 验证信息={comment}。")
         
         # 获取延迟时间
         delay_seconds = self.delay_seconds
@@ -114,39 +114,39 @@ class AppReview:
         # 自动处理逻辑
         if self.auto_accept:
             if delay_seconds > 0:
-                logger.info(f"[Authenticator] 将在 {delay_seconds} 秒后自动同意用户 {user_id} 加入群 {group_id} 的请求")
+                logger.info(f"[Authenticator] 将在 {delay_seconds} 秒后同意用户 {user_id} 加入群 {group_id} 的请求。")
                 await asyncio.sleep(delay_seconds)
             await self.approve_request(event, flag, True)
-            logger.info(f"[Authenticator] 自动同意用户 {user_id} 加入群 {group_id} 的请求")
+            logger.info(f"[Authenticator] 已同意用户 {user_id} 加入群 {group_id} 的请求。")
             return
         
         if self.auto_reject:
             if delay_seconds > 0:
-                logger.info(f"[Authenticator] 将在 {delay_seconds} 秒后自动拒绝用户 {user_id} 加入群 {group_id} 的请求")
+                logger.info(f"[Authenticator] 将在 {delay_seconds} 秒后拒绝用户 {user_id} 加入群 {group_id} 的请求。")
                 await asyncio.sleep(delay_seconds)
             await self.approve_request(event, flag, False, self.reject_reason)
-            logger.info(f"[Authenticator] 自动拒绝用户 {user_id} 加入群 {group_id} 的请求")
+            logger.info(f"[Authenticator] 已拒绝用户 {user_id} 加入群 {group_id} 的请求。")
             return
         
         # 根据关键词处理，优先检查拒绝关键词
         for keyword in self.reject_keywords:
             if keyword.lower() in comment.lower():
                 if delay_seconds > 0:
-                    logger.info(f"[Authenticator] 将在 {delay_seconds} 秒后根据关键词 '{keyword}' 拒绝用户 {user_id} 加入群 {group_id} 的请求")
+                    logger.info(f"[Authenticator] 将在 {delay_seconds} 秒后根据关键词 '{keyword}' 拒绝用户 {user_id} 加入群 {group_id} 的请求。")
                     await asyncio.sleep(delay_seconds)
                 await self.approve_request(event, flag, False, self.reject_reason)
-                logger.info(f"[Authenticator] 根据关键词 '{keyword}' 拒绝用户 {user_id} 加入群 {group_id} 的请求")
+                logger.info(f"[Authenticator] 已根据关键词 '{keyword}' 拒绝用户 {user_id} 加入群 {group_id} 的请求。")
                 return
         
         # 再检查是否包含接受关键词
         for keyword in self.accept_keywords:
             if keyword.lower() in comment.lower():
                 if delay_seconds > 0:
-                    logger.info(f"[Authenticator] 将在 {delay_seconds} 秒后根据关键词 '{keyword}' 同意用户 {user_id} 加入群 {group_id} 的请求")
+                    logger.info(f"[Authenticator] 将在 {delay_seconds} 秒后根据关键词 '{keyword}' 同意用户 {user_id} 加入群 {group_id} 的请求。")
                     await asyncio.sleep(delay_seconds)
                 await self.approve_request(event, flag, True)
-                logger.info(f"[Authenticator] 根据关键词 '{keyword}' 同意用户 {user_id} 加入群 {group_id} 的请求")
+                logger.info(f"[Authenticator] 已根据关键词 '{keyword}' 同意用户 {user_id} 加入群 {group_id} 的请求。")
                 return
         
         # 如果没有匹配到关键词，不做任何处理，等待手动审核
-        logger.info(f"[Authenticator] 用户 {user_id} 加入群 {group_id} 的请求未匹配到关键词，等待手动审核")
+        logger.info(f"[Authenticator] 用户 {user_id} 加入群 {group_id} 的请求未匹配到任意关键词，等待手动审核。")
