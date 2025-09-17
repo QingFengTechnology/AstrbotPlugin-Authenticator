@@ -37,6 +37,23 @@
           }
         }
       },
+      "AutomaticReview_LevelRestrictionsConfig": {
+        "type": "object",
+        "description": "加群者等级限制配置",
+        "items": {
+          "LevelRestrictionsConfig_Number": {
+            "type": "int",
+            "description": "加群者等级限制",
+            "default": 0,
+            "hint": "加群者的QQ等级必须大于等于此值，否则将被强制拒绝，即使其回答命中关键词。设为0表示不启用该功能。"
+          },
+          "LevelRestrictionsConfig_RejectReason": {
+            "type": "string",
+            "description": "拒绝申请时使用的理由",
+            "default": "申请被拒绝。"
+          }
+        }
+      },
       "AutomaticReview_DelaySeconds": {
         "type": "int",
         "description": "延迟处理时间",

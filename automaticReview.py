@@ -34,6 +34,11 @@ class AppReview:
         self.reject_keywords = keywords_config["KeywordsConfig_RejectKeywords"]
         self.reject_reason = keywords_config["KeywordsConfig_RejectReason"]
         
+        # 获取等级限制配置
+        level_config = automatic_review["AutomaticReview_LevelRestrictionsConfig"]
+        self.level_restriction = level_config["LevelRestrictionsConfig_Number"]
+        self.level_reject_reason = level_config["LevelRestrictionsConfig_RejectReason"]
+        
         # 获取其他配置
         self.delay_seconds = automatic_review["AutomaticReview_DelaySeconds"]
         self.whitelist_groups = config["WhitelistGroups"]
@@ -92,6 +97,39 @@ class AppReview:
             logger.error(f"[Authenticator] 处理群聊申请失败: {e}")
             return False
     
+    async def get_user_level(self, event: AstrMessageEvent, user_id: str) -> int:
+        """
+        获取用户的QQ等级
+        
+        Args:
+            event: 消息事件
+            user_id: 用户ID
+            
+        Returns:
+            用户的QQ等级，如果获取失败返回0
+        """
+        try:
+            # 检查是否为aiocqhttp平台
+            if event.get_platform_name() == "aiocqhttp":
+                # 使用NapCat API格式
+                from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import AiocqhttpMessageEvent
+                assert isinstance(event, AiocqhttpMessageEvent)
+                client = event.bot
+                
+                # 调用NapCat API获取用户信息
+                user_info = await client.get_stranger_info(user_id=int(user_id), no_cache=True)
+                if user_info and "level" in user_info:
+                    return int(user_info["level"])
+            # 兼容其他平台的处理方式
+            elif event.bot and hasattr(event.bot, "get_stranger_info"):
+                user_info = await event.bot.get_stranger_info(user_id=int(user_id), no_cache=True)
+                if user_info and "level" in user_info:
+                    return int(user_info["level"])
+        except Exception as e:
+            logger.error(f"[Authenticator] 获取用户 {user_id} 的QQ等级失败: {e}")
+        
+        return 0
+
     async def process_group_join_request(self, event: AstrMessageEvent, 
                                         request_data: Dict[str, Any]) -> None:
         """
@@ -115,6 +153,19 @@ class AppReview:
         
         # 获取延迟时间
         delay_seconds = self.delay_seconds
+        
+        # 检查等级限制（如果启用了等级限制）
+        if self.level_restriction > 0:
+            user_level = await self.get_user_level(event, user_id)
+            logger.info(f"[Authenticator] 用户 {user_id} 的QQ等级为: {user_level}, 限制等级为: {self.level_restriction}")
+            
+            if user_level < self.level_restriction:
+                if delay_seconds > 0:
+                    logger.info(f"[Authenticator] 将在 {delay_seconds} 秒后根据等级限制拒绝用户 {user_id} 加入群 {group_id} 的请求。")
+                    await asyncio.sleep(delay_seconds)
+                await self.approve_request(event, flag, False, self.level_reject_reason)
+                logger.info(f"[Authenticator] 已根据等级限制拒绝用户 {user_id} 加入群 {group_id} 的请求。")
+                return
         
         # 根据关键词处理，优先检查拒绝关键词
         for keyword in self.reject_keywords:
