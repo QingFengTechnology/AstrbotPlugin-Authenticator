@@ -32,8 +32,7 @@
           },
           "KeywordsConfig_RejectReason": {
             "type": "string",
-            "title": "拒绝理由",
-            "description": "拒绝申请时使用的理由。",
+            "description": "拒绝申请时使用的理由",
             "default": "申请被拒绝。"
           }
         }
@@ -44,12 +43,12 @@
         "items": {
           "AutoReviewConfig_Enable": {
             "type": "string",
-            "description": "是否启用该功能。",
-            "hint": "配置为`None`时不启用该功能；`False`表示自动拒绝所有请求；`True`表示自动同意所有请求。\n配置为其他值将自动回滚为`None`。",
+            "description": "是否启用该功能",
+            "hint": "配置为`None`时不启用该功能；`False`表示自动拒绝所有请求；`True`表示自动同意所有请求。",
             "options": [
               "None",
-              "False",
-              "True"
+              "True",
+              "False"
             ],
             "default": "None"
           },
