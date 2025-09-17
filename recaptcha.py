@@ -28,33 +28,33 @@ class ReCAPTCHA:
     
     def _load_config(self, config: Dict[str, Any]):
         """加载验证码验证相关配置"""
-        # 从新的嵌套配置结构中获取配置
+        # 从配置结构中获取配置（直接获取，没有items层）
         recaptcha_config = config["SimpleReCAPTCHA"]
         
-        # 获取基础配置（从items中获取）
-        self.verification_timeout = recaptcha_config["items"]["SimpleReCAPTCHA_VerificationTimeout"]
-        self.kick_delay = recaptcha_config["items"]["SimpleReCAPTCHA_KickDelay"]
+        # 获取基础配置
+        self.verification_timeout = recaptcha_config["SimpleReCAPTCHA_VerificationTimeout"]
+        self.kick_delay = recaptcha_config["SimpleReCAPTCHA_KickDelay"]
         
-        # 获取消息配置（从items中获取）
-        message_config = recaptcha_config["items"]["SimpleReCAPTCHA_MessageConfig"]
-        self.new_member_prompt = message_config["items"]["MessageConfig_Join"]
-        self.welcome_message = message_config["items"]["MessageConfig_Success"]
-        self.wrong_answer_prompt = message_config["items"]["MessageConfig_Wrong"]
+        # 获取消息配置
+        message_config = recaptcha_config["SimpleReCAPTCHA_MessageConfig"]
+        self.new_member_prompt = message_config["MessageConfig_Join"]
+        self.welcome_message = message_config["MessageConfig_Success"]
+        self.wrong_answer_prompt = message_config["MessageConfig_Wrong"]
         
-        # 获取倒计时警告配置（从items中获取）
-        countdown_config = message_config["items"]["MessageConfig_CountdownWarningConfig"]
-        self.kick_countdown_warning_time = countdown_config["items"]["CountdownWarningConfig_Time"]
-        self.countdown_warning_prompt = countdown_config["items"]["CountdownWarningConfig_Message"]
+        # 获取倒计时警告配置
+        countdown_config = message_config["MessageConfig_CountdownWarningConfig"]
+        self.kick_countdown_warning_time = countdown_config["CountdownWarningConfig_Time"]
+        self.countdown_warning_prompt = countdown_config["CountdownWarningConfig_Message"]
         
-        # 获取失败配置（从items中获取）
-        failure_config = message_config["items"]["MessageConfig_FailureConfig"]
-        self.disable_failure_message = not failure_config["items"]["FailureConfig_Enable"]
-        self.failure_message = failure_config["items"]["FailureConfig_Message"]
+        # 获取失败配置
+        failure_config = message_config["MessageConfig_FailureConfig"]
+        self.disable_failure_message = not failure_config["FailureConfig_Enable"]
+        self.failure_message = failure_config["FailureConfig_Message"]
         
-        # 获取踢出配置（从items中获取）
-        kick_config = message_config["items"]["MessageConfig_KickConfig"]
-        self.disable_kick_message = not kick_config["items"]["KickConfig_Enable"]
-        self.kick_message = kick_config["items"]["KickConfig_Message"]
+        # 获取踢出配置
+        kick_config = message_config["MessageConfig_KickConfig"]
+        self.disable_kick_message = not kick_config["KickConfig_Enable"]
+        self.kick_message = kick_config["KickConfig_Message"]
         
         self.whitelist_groups = config["WhitelistGroups"]
     
