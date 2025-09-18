@@ -224,16 +224,12 @@ class BanManager:
         Args:
             context: AstrBot上下文对象
         """
-        logger.debug(f"[Authenticator] 开始初始化自动踢出任务，功能启用状态: {self.enabled}, 踢出时间: {self.auto_kick_time}")
-        
         if not self.enabled or self.auto_kick_time <= 0:
             logger.debug("[Authenticator] 自动踢出功能未启用或间隔时间为0，不启动自动踢出任务")
             return
             
         # 计算间隔时间（秒）
         interval_seconds = self._get_interval_seconds()
-        
-        logger.debug(f"[Authenticator] 计算得到的检查间隔秒数: {interval_seconds}")
         
         if interval_seconds <= 0:
             logger.debug("[Authenticator] 自动踢出间隔时间为0，不启动自动踢出任务")
@@ -245,7 +241,6 @@ class BanManager:
         self.auto_kick_task = asyncio.create_task(
             self._auto_kick_loop(context, interval_seconds)
         )
-        logger.debug("[Authenticator] 自动踢出任务已创建")
     
     def _get_interval_seconds(self) -> int:
         """
@@ -262,10 +257,7 @@ class BanManager:
         }
         
         multiplier = unit_multipliers.get(self.auto_kick_unit, 3600)  # 默认使用小时
-        logger.debug(f"[Authenticator] 自动踢出时间单位: {self.auto_kick_unit}, 时间: {self.auto_kick_time}, 倍数: {multiplier}")
-        result = self.auto_kick_time * multiplier
-        logger.debug(f"[Authenticator] 计算得到的间隔秒数: {result}")
-        return result
+        return self.auto_kick_time * multiplier
     
     async def _auto_kick_loop(self, context, interval_seconds: int):
         """
@@ -276,38 +268,24 @@ class BanManager:
             interval_seconds: 检查间隔秒数
         """
         try:
-            logger.debug("[Authenticator] 自动踢出循环任务已启动")
             while True:
-                logger.debug(f"[Authenticator] 等待 {interval_seconds} 秒后开始下一次检查")
                 await asyncio.sleep(interval_seconds)
-                logger.debug("[Authenticator] 自动踢出检查周期开始")
                 
-                if not self.enabled:
-                    logger.debug("[Authenticator] 黑名单功能已禁用，跳过本次检查")
-                    continue
-                    
-                if not self.banned_users:
-                    logger.debug("[Authenticator] 黑名单用户列表为空，跳过本次检查")
+                if not self.enabled or not self.banned_users:
                     continue
                     
                 logger.info(f"[Authenticator] 开始自动踢出检查，当前黑名单用户数: {len(self.banned_users)}")
                 
                 # 获取所有平台实例
-                logger.debug("[Authenticator] 开始获取平台实例列表")
                 platforms = context.platform_manager.get_insts()
-                logger.debug(f"[Authenticator] 获取到 {len(platforms)} 个平台实例")
                 
-                for i, platform in enumerate(platforms):
-                    logger.debug(f"[Authenticator] 开始检查第 {i+1}/{len(platforms)} 个平台: {type(platform).__name__}")
+                for platform in platforms:
                     await self._check_and_kick_banned_users(platform)
-                    logger.debug(f"[Authenticator] 第 {i+1}/{len(platforms)} 个平台检查完成")
                     
         except asyncio.CancelledError:
             logger.info("[Authenticator] 自动踢出任务已被取消")
         except Exception as e:
             logger.error(f"[Authenticator] 自动踢出任务发生错误: {e}")
-            import traceback
-            logger.error(f"[Authenticator] 错误详情: {traceback.format_exc()}")
     
     async def _check_and_kick_banned_users(self, platform):
         """
@@ -317,42 +295,25 @@ class BanManager:
             platform: 平台适配器实例
         """
         try:
-            logger.debug(f"[Authenticator] 开始检查平台 {type(platform).__name__} 上的黑名单用户")
+            # 获取平台上的所有群组
+            groups = await self._get_platform_groups(platform)
             
-            # 如果有白名单配置，直接使用白名单群组，避免获取所有群组
-            if self.whitelist_groups:
-                logger.debug(f"[Authenticator] 使用白名单群组列表: {self.whitelist_groups}")
-                groups_to_check = self.whitelist_groups
-            else:
-                # 没有白名单配置时，获取平台上的所有群组
-                logger.debug("[Authenticator] 开始获取平台群组列表")
-                groups_to_check = await self._get_platform_groups(platform)
-                logger.debug(f"[Authenticator] 获取到 {len(groups_to_check)} 个群组: {groups_to_check}")
-            
-            for group_id in groups_to_check:
-                logger.debug(f"[Authenticator] 开始检查群组 {group_id}")
-                
+            for group_id in groups:
+                # 检查群组是否在白名单中
+                if self.whitelist_groups and str(group_id) not in self.whitelist_groups:
+                    continue
+                    
                 # 获取群成员列表
-                logger.debug(f"[Authenticator] 开始获取群组 {group_id} 的成员列表")
                 members = await self._get_group_members(platform, group_id)
-                logger.debug(f"[Authenticator] 群组 {group_id} 有 {len(members)} 个成员")
                 
                 # 检查每个成员是否在黑名单中
-                logger.debug(f"[Authenticator] 开始检查群组 {group_id} 中的黑名单用户")
                 for user_id in members:
-                    logger.debug(f"[Authenticator] 检查用户 {user_id} 是否在黑名单中")
                     if self.is_banned(str(user_id)):
                         logger.info(f"[Authenticator] 发现黑名单用户 {user_id} 在群 {group_id} 中，执行踢出操作")
                         await self._kick_member(platform, group_id, user_id, "黑名单成员自动踢出")
-                    else:
-                        logger.debug(f"[Authenticator] 用户 {user_id} 不在黑名单中")
-                logger.debug(f"[Authenticator] 群组 {group_id} 的黑名单用户检查完成")
-            logger.debug(f"[Authenticator] 平台 {type(platform).__name__} 上的黑名单用户检查完成")
                         
         except Exception as e:
             logger.error(f"[Authenticator] 检查并踢出黑名单用户时发生错误: {e}")
-            import traceback
-            logger.error(f"[Authenticator] 错误详情: {traceback.format_exc()}")
     
     async def _get_platform_groups(self, platform) -> List[str]:
         """
@@ -365,43 +326,12 @@ class BanManager:
             群组ID列表
         """
         try:
-            logger.debug(f"[Authenticator] 尝试获取平台 {type(platform).__name__} 的群组列表")
-            
-            # 首先尝试使用NapCat API格式调用协议端API
-            if hasattr(platform, 'get_client') and hasattr(platform.get_client(), 'api'):
-                logger.debug("[Authenticator] 平台支持 NapCat API 格式，使用协议端API调用")
-                payloads = {}
-                logger.debug("[Authenticator] 准备调用 /get_group_list API")
-                
-                # 调用协议端API
-                result = await platform.get_client().api.call_action('get_group_list', **payloads)
-                logger.debug(f"[Authenticator] /get_group_list API返回: {result}")
-                
-                # 解析返回结果 - NapCat API直接返回数据数组，没有'data'字段
-                if result and isinstance(result, list):
-                    groups = result
-                    group_ids = [str(group.get('group_id')) for group in groups if group.get('group_id')]
-                    logger.debug(f"[Authenticator] 从API返回中解析出 {len(group_ids)} 个群组ID: {group_ids[:10]}{'...' if len(group_ids) > 10 else ''}")
-                    return group_ids
-                else:
-                    logger.warning(f"[Authenticator] /get_group_list API返回空数据或格式错误: {result}")
-                    return []
-            
-            # 兼容旧版本方式
             if hasattr(platform, 'get_group_list'):
-                logger.debug("[Authenticator] 平台支持旧版 get_group_list 方法")
                 groups = await platform.get_group_list()
-                logger.debug(f"[Authenticator] get_group_list 返回结果: {groups}")
-                result = [str(group['group_id']) for group in groups] if groups else []
-                logger.debug(f"[Authenticator] 转换后的群组ID列表: {result}")
-                return result
-            
-            logger.debug("[Authenticator] 平台不支持 get_group_list 方法")
+                return [str(group['group_id']) for group in groups] if groups else []
             return []
         except Exception as e:
             logger.error(f"[Authenticator] 获取群组列表失败: {e}")
-            import traceback
-            logger.error(f"[Authenticator] 错误详情: {traceback.format_exc()}")
             return []
     
     async def _get_group_members(self, platform, group_id: str) -> List[str]:
@@ -416,46 +346,12 @@ class BanManager:
             成员ID列表
         """
         try:
-            logger.debug(f"[Authenticator] 尝试获取群组 {group_id} 的成员列表")
-            
-            # 首先尝试使用NapCat API格式调用协议端API
-            if hasattr(platform, 'get_client') and hasattr(platform.get_client(), 'api'):
-                logger.debug("[Authenticator] 平台支持 NapCat API 格式，使用协议端API调用")
-                payloads = {
-                    "group_id": int(group_id),
-                    "no_cache": False
-                }
-                logger.debug(f"[Authenticator] 准备调用 /get_group_member_list API，参数: {payloads}")
-                
-                # 调用协议端API
-                result = await platform.get_client().api.call_action('get_group_member_list', **payloads)
-                logger.debug(f"[Authenticator] /get_group_member_list API返回: {result}")
-                
-                # 解析返回结果 - NapCat API直接返回数据数组，没有'data'字段
-                if result and isinstance(result, list):
-                    members = result
-                    user_ids = [str(member.get('user_id')) for member in members if member.get('user_id')]
-                    logger.debug(f"[Authenticator] 从API返回中解析出 {len(user_ids)} 个成员ID: {user_ids[:10]}{'...' if len(user_ids) > 10 else ''}")
-                    return user_ids
-                else:
-                    logger.warning(f"[Authenticator] /get_group_member_list API返回空数据或格式错误: {result}")
-                    return []
-            
-            # 兼容旧版本方式
             if hasattr(platform, 'get_group_member_list'):
-                logger.debug("[Authenticator] 平台支持旧版 get_group_member_list 方法")
                 members = await platform.get_group_member_list(group_id=int(group_id))
-                logger.debug(f"[Authenticator] get_group_member_list 返回结果: {members}")
-                result = [str(member['user_id']) for member in members] if members else []
-                logger.debug(f"[Authenticator] 转换后的成员ID列表: {result}")
-                return result
-            
-            logger.warning(f"[Authenticator] 平台 {type(platform).__name__} 不支持获取群成员列表的方法")
+                return [str(member['user_id']) for member in members] if members else []
             return []
         except Exception as e:
             logger.error(f"[Authenticator] 获取群 {group_id} 成员列表失败: {e}")
-            import traceback
-            logger.error(f"[Authenticator] 错误详情: {traceback.format_exc()}")
             return []
     
     async def _kick_member(self, platform, group_id: str, user_id: str, reason: str = ""):
@@ -472,26 +368,7 @@ class BanManager:
             操作是否成功
         """
         try:
-            logger.debug(f"[Authenticator] 尝试踢出用户 {user_id} 从群组 {group_id}")
-            
-            # 使用NapCat API格式调用set_group_kick
-            if hasattr(platform, 'get_client') and hasattr(platform.get_client(), 'api'):
-                logger.debug("[Authenticator] 平台支持 NapCat API 格式")
-                payloads = {
-                    "group_id": int(group_id),
-                    "user_id": int(user_id),
-                    "reject_add_request": False  # 是否同时拒绝加群请求
-                }
-                logger.debug(f"[Authenticator] 准备调用 API，参数: {payloads}")
-                
-                # 调用协议端API
-                result = await platform.get_client().api.call_action('set_group_kick', **payloads)
-                logger.info(f"[Authenticator] 已踢出用户 {user_id} 从群 {group_id}，理由: {reason}, API返回: {result}")
-                return True
-            
-            # 兼容旧版本方式
             if hasattr(platform, 'set_group_kick'):
-                logger.debug("[Authenticator] 平台支持旧版 set_group_kick 方法")
                 await platform.set_group_kick(
                     group_id=int(group_id),
                     user_id=int(user_id),
@@ -499,13 +376,9 @@ class BanManager:
                 )
                 logger.info(f"[Authenticator] 已踢出用户 {user_id} 从群 {group_id}，理由: {reason}")
                 return True
-            
-            logger.warning(f"[Authenticator] 平台 {type(platform).__name__} 不支持踢出操作")
             return False
         except Exception as e:
             logger.error(f"[Authenticator] 踢出用户 {user_id} 从群 {group_id} 失败: {e}")
-            import traceback
-            logger.error(f"[Authenticator] 错误详情: {traceback.format_exc()}")
             return False
     
     def stop_auto_kick_task(self):
