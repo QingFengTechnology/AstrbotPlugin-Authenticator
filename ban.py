@@ -450,7 +450,7 @@ class BanManager:
                 logger.debug(f"[Authenticator] 转换后的成员ID列表: {result}")
                 return result
             
-            logger.warning("[Authenticator] 平台不支持获取群成员列表的方法")
+            logger.warning(f"[Authenticator] 平台 {type(platform).__name__} 不支持获取群成员列表的方法")
             return []
         except Exception as e:
             logger.error(f"[Authenticator] 获取群 {group_id} 成员列表失败: {e}")
