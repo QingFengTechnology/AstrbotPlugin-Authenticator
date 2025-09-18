@@ -176,6 +176,11 @@
         "type": "object",
         "description": "黑名单功能设置",
         "items": {
+          "BanConfig_List": {
+            "type": "list",
+            "description": "黑名单列表",
+            "default": []
+          },
           "BanConfig_IgnoreUser": {
             "type": "bool",
             "description": "忽略用户消息",

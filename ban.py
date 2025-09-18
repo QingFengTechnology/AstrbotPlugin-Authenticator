@@ -52,8 +52,18 @@ class BanManager:
         # 白名单群组
         self.whitelist_groups = self.config["WhitelistGroups"]
         
+        # 加载初始黑名单列表
+        initial_ban_list = ban_config_settings.get("BanConfig_List", [])
+        if initial_ban_list:
+            for user_id in initial_ban_list:
+                user_id_str = str(user_id).strip()
+                if user_id_str:
+                    self.banned_users.add(user_id_str)
+            logger.info(f"[Authenticator] 从配置加载了 {len(initial_ban_list)} 个初始黑名单用户")
+        
         logger.debug(f"[Authenticator] 黑名单配置加载完成: 启用={self.enabled}, 忽略消息={self.ignore_user_messages}, "
-                    f"拒绝加群={self.reject_invitation_enabled}, 自动踢出间隔={self.auto_kick_time}{self.auto_kick_unit}")
+                    f"拒绝加群={self.reject_invitation_enabled}, 自动踢出间隔={self.auto_kick_time}{self.auto_kick_unit}, "
+                    f"初始黑名单用户数={len(initial_ban_list)}")
     
     def is_enabled(self) -> bool:
         """检查黑名单功能是否启用"""
