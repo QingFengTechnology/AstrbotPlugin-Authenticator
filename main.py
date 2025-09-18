@@ -6,6 +6,7 @@ from astrbot.api.star import Context, Star
 
 from .automaticReview import AppReview
 from .simpleReCAPTCHA import ReCAPTCHA
+from .ban import BanManager
 
 # 主类定义
 class AuthenticatorPlugin(Star):
@@ -16,8 +17,13 @@ class AuthenticatorPlugin(Star):
         # 初始化模块 - 传递完整的配置对象
         self.recaptcha = ReCAPTCHA(config)
         self.appreview = AppReview(config)
+        self.ban_manager = BanManager(config)
         
         self._apply_monkey_patch()
+        
+        # 启动黑名单自动踢出任务
+        self.ban_manager.start_auto_kick_task(context)
+        
         logger.debug("[Authenticator] 插件初始化完成。")
     
     def _apply_monkey_patch(self):
@@ -41,8 +47,16 @@ class AuthenticatorPlugin(Star):
         raw = event.message_obj.raw_message
         post_type = raw.get("post_type")
 
+        # 首先检查是否应该忽略黑名单用户的消息
+        if await self.ban_manager.should_ignore_user_message(event):
+            return
+
         # 处理群聊申请事件
         if post_type == "request" and raw.get("request_type") == "group" and raw.get("sub_type") == "add":
+            # 先检查黑名单
+            if await self.ban_manager.process_group_join_request(event, raw):
+                return  # 如果在黑名单中并已处理，直接返回
+            
             await self.appreview.process_group_join_request(event, raw)
             return
         
@@ -60,4 +74,8 @@ class AuthenticatorPlugin(Star):
         """插件被卸载/停用时调用"""
         # 清理所有待处理的验证任务
         self.recaptcha.cleanup()
+        
+        # 停止黑名单自动踢出任务
+        self.ban_manager.cleanup()
+        
         logger.debug("[Authenticator] 插件已停止。")

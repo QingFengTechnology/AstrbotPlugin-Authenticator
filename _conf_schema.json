@@ -45,7 +45,7 @@
             "type": "int",
             "description": "加群者等级限制",
             "default": 0,
-            "hint": "加群者的QQ等级必须大于等于此值，否则将被强制拒绝，即使其回答命中关键词。设为0表示不启用该功能。"
+            "hint": "加群者的QQ等级必须大于等于此值，否则将被强制拒绝，即使其回答命中关键词。设为0以禁用该功能。"
           },
           "LevelRestrictionsConfig_RejectReason": {
             "type": "string",
@@ -156,6 +156,70 @@
                 "type": "string",
                 "default": "{at_user} 因未在规定时间内完成验证，已被请出本群。",
                 "hint": "成员被踢出后发送的公开消息，可用变量: {at_user}, {member_name}。"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "Ban": {
+    "type": "object",
+    "description": "黑名单相关配置",
+    "items": {
+      "Ban_Enable": {
+        "type": "bool",
+        "description": "是否启用黑名单功能",
+        "default": false
+      },
+      "BanConfig": {
+        "type": "object",
+        "description": "黑名单功能设置",
+        "items": {
+          "BanConfig_IgnoreUser": {
+            "type": "bool",
+            "description": "忽略用户消息",
+            "hint": "阻止Astrbot回复该用户消息，这也会阻止其他插件(包括系统)回复。",
+            "default": false
+          },
+          "BanConfig_RejectInvitationConfig": {
+            "type": "object",
+            "description": "用户加群设置",
+            "items": {
+              "RejectInvitationConfig_Enable": {
+                "type": "bool",
+                "description": "阻止该用户加群",
+                "hint": "强制拒绝用户加入白名单群聊，即使其回答命中关键词。",
+                "default": false
+              },
+              "RejectInvitationConfig_Reason": {
+                "type": "string",
+                "description": "拒绝申请时使用的理由",
+                "default": "申请被拒绝。"
+              }
+            }
+          },
+          "BanConfig_AutoKickConfig": {
+            "type": "object",
+            "description": "自动踢出设置",
+            "items": {
+              "AutoKickConfig_Unit": {
+                "type": "string",
+                "description": "黑名单检查间隔单位",
+                "hint": "单位Second为秒，Minute为分，Hour为小时，Day为天。",
+                "options": [
+                  "Second",
+                  "Minute",
+                  "Hour",
+                  "Day"
+                ],
+                "default": "Hour"
+              },
+              "AutoKickConfig_Time": {
+                "type": "int",
+                "description": "黑名单成员检查间隔",
+                "default": 48,
+                "hint": "每多少单位时间检查一次黑名单成员是否在白名单群聊，若存在则踢出。设为0以禁用该功能。"
               }
             }
           }
