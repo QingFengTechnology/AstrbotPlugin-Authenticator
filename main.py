@@ -47,17 +47,17 @@ class AuthenticatorPlugin(Star):
         raw = event.message_obj.raw_message
         post_type = raw.get("post_type")
 
-        # 首先检查是否应该忽略黑名单用户的消息
-        if await self.ban_manager.should_ignore_user_message(event):
-            return
-
-        # 处理群聊申请事件
+        # 处理群聊申请事件（加群请求需要特殊处理，不能忽略）
         if post_type == "request" and raw.get("request_type") == "group" and raw.get("sub_type") == "add":
             # 先检查黑名单
             if await self.ban_manager.process_group_join_request(event, raw):
                 return  # 如果在黑名单中并已处理，直接返回
             
             await self.appreview.process_group_join_request(event, raw)
+            return
+
+        # 对于其他类型的事件，检查是否应该忽略黑名单用户的消息
+        if await self.ban_manager.should_ignore_user_message(event):
             return
         
         # 处理群消息和通知事件
