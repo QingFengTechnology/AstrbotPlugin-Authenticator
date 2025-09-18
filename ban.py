@@ -183,35 +183,27 @@ class BanManager:
         Returns:
             操作是否成功
         """
-        try:
-            # 检查是否为aiocqhttp平台
-            if event.get_platform_name() == "aiocqhttp":
-                # 使用NapCat API格式
-                from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import AiocqhttpMessageEvent
-                assert isinstance(event, AiocqhttpMessageEvent)
-                client = event.bot
-                
-                # 调用NapCat API
-                payloads = {
-                    "flag": flag,
-                    "sub_type": "add",
-                    "approve": False,
-                    "reason": reason if reason else ""
-                }
-                
-                await client.call_action('set_group_add_request', **payloads)
-                return True
-            # 兼容其他平台的处理方式
-            elif event.bot and hasattr(event.bot, "call_action"):
-                await event.bot.call_action(
-                    "set_group_add_request",
-                    flag=flag,
-                    sub_type="add",
-                    approve=False,
-                    reason=reason
-                )
-                return True
+        # 检查是否为aiocqhttp平台
+        if event.get_platform_name() != "aiocqhttp":
+            logger.debug(f"[Authenticator] 插件仅支持 aiocqhttp 平台处理群聊申请，当前平台: {event.get_platform_name()}，跳过操作。")
             return False
+            
+        try:
+            # 使用NapCat API格式
+            from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import AiocqhttpMessageEvent
+            assert isinstance(event, AiocqhttpMessageEvent)
+            client = event.bot
+            
+            # 调用NapCat API
+            payloads = {
+                "flag": flag,
+                "sub_type": "add",
+                "approve": False,
+                "reason": reason if reason else ""
+            }
+            
+            await client.call_action('set_group_add_request', **payloads)
+            return True
         except Exception as e:
             logger.error(f"[Authenticator] 拒绝群聊申请失败: {e}")
             return False

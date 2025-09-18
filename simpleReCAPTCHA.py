@@ -89,6 +89,11 @@ class ReCAPTCHA:
             gid: 群ID
             nickname: 用户昵称
         """
+        # 检查是否为aiocqhttp平台
+        if bot.get_platform_name() != "aiocqhttp":
+            logger.debug(f"[Authenticator] 插件仅支持 aiocqhttp 平台执行踢出操作，当前平台: {bot.get_platform_name()}，跳过操作。")
+            return
+            
         try:
             wait_time = self.verification_timeout - self.kick_countdown_warning_time
             if self.kick_countdown_warning_time > 0 and wait_time > 0:
@@ -154,6 +159,11 @@ class ReCAPTCHA:
         Args:
             event: 消息事件
         """
+        # 检查是否为aiocqhttp平台
+        if event.get_platform_name() != "aiocqhttp":
+            logger.debug(f"[Authenticator] 插件仅支持 aiocqhttp 平台处理新成员，当前平台: {event.get_platform_name()}，跳过处理。")
+            return
+            
         raw = event.message_obj.raw_message
         uid = str(raw.get("user_id"))
         gid = raw.get("group_id")
@@ -174,6 +184,11 @@ class ReCAPTCHA:
             gid: 群ID
             is_new_member: 是否是新成员
         """
+        # 检查是否为aiocqhttp平台
+        if event.get_platform_name() != "aiocqhttp":
+            logger.debug(f"[Authenticator] 插件仅支持 aiocqhttp 平台启动验证流程，当前平台: {event.get_platform_name()}，跳过操作。")
+            return
+            
         if uid in self.pending:
             old_task = self.pending[uid].get("task")
             if old_task and not old_task.done():
@@ -216,6 +231,11 @@ class ReCAPTCHA:
         Args:
             event: 消息事件
         """
+        # 检查是否为aiocqhttp平台
+        if event.get_platform_name() != "aiocqhttp":
+            logger.debug(f"[Authenticator] 插件仅支持 aiocqhttp 平台处理验证消息，当前平台: {event.get_platform_name()}，返回验证失败。")
+            return
+            
         uid = str(event.get_sender_id())
         if uid not in self.pending:
             return

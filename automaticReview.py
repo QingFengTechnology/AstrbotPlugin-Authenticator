@@ -108,50 +108,39 @@ class AppReview:
         Returns:
             用户的QQ等级，如果获取失败返回0
         """
+        # 检查是否为aiocqhttp平台
+        if event.get_platform_name() != "aiocqhttp":
+            logger.debug(f"[Authenticator] 插件仅支持 aiocqhttp 平台获取用户等级，当前平台: {event.get_platform_name()}，返回默认等级。")
+            return 0
+            
         try:
-            # 检查是否为aiocqhttp平台
-            if event.get_platform_name() == "aiocqhttp":
-                # 使用NapCat API格式
-                from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import AiocqhttpMessageEvent
-                assert isinstance(event, AiocqhttpMessageEvent)
-                client = event.bot
-                
-                logger.debug(f"[Authenticator] 开始获取用户 {user_id} 的QQ等级信息")
-                
-                # 调用NapCat API获取用户信息 - 使用正确的API调用方式
-                payloads = {
-                    "user_id": int(user_id),
-                    "no_cache": True
-                }
-                logger.debug(f"[Authenticator] 调用get_stranger_info API，参数: {payloads}")
-                
-                user_info = await client.api.call_action('get_stranger_info', **payloads)
-                logger.debug(f"[Authenticator] API返回结果: {user_info}")
-                
-                if user_info:
-                    # 根据实际API返回结构检查qqLevel字段
-                    if "qqLevel" in user_info:
-                        qq_level = int(user_info["qqLevel"])
-                        logger.debug(f"[Authenticator] 成功获取用户 {user_id} 的QQ等级: {qq_level}")
-                        return qq_level
-                    else:
-                        logger.debug(f"[Authenticator] 返回数据中缺少qqLevel字段，完整响应: {user_info}")
-                else:
-                    logger.debug(f"[Authenticator] API调用返回None或空结果")
-                    
-            # 兼容其他平台的处理方式
-            elif event.bot and hasattr(event.bot, "get_stranger_info"):
-                logger.debug(f"[Authenticator] 使用兼容模式获取用户 {user_id} 的QQ等级")
-                user_info = await event.bot.get_stranger_info(user_id=int(user_id), no_cache=True)
-                logger.debug(f"[Authenticator] 兼容模式返回结果: {user_info}")
-                if user_info and "level" in user_info:
-                    qq_level = int(user_info["level"])
-                    logger.debug(f"[Authenticator] 兼容模式成功获取用户 {user_id} 的QQ等级: {qq_level}")
+            # 使用NapCat API格式
+            from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import AiocqhttpMessageEvent
+            assert isinstance(event, AiocqhttpMessageEvent)
+            client = event.bot
+            
+            logger.debug(f"[Authenticator] 开始获取用户 {user_id} 的QQ等级信息")
+            
+            # 调用NapCat API获取用户信息 - 使用正确的API调用方式
+            payloads = {
+                "user_id": int(user_id),
+                "no_cache": True
+            }
+            logger.debug(f"[Authenticator] 调用get_stranger_info API，参数: {payloads}")
+            
+            user_info = await client.api.call_action('get_stranger_info', **payloads)
+            logger.debug(f"[Authenticator] API返回结果: {user_info}")
+            
+            if user_info:
+                # 根据实际API返回结构检查qqLevel字段
+                if "qqLevel" in user_info:
+                    qq_level = int(user_info["qqLevel"])
+                    logger.debug(f"[Authenticator] 成功获取用户 {user_id} 的QQ等级: {qq_level}")
                     return qq_level
                 else:
-                    logger.debug(f"[Authenticator] 兼容模式获取失败或缺少level字段")
+                    logger.debug(f"[Authenticator] 返回数据中缺少qqLevel字段，完整响应: {user_info}")
             else:
-                logger.debug(f"[Authenticator] 不支持的平台或bot对象缺少get_stranger_info方法")
+                logger.debug(f"[Authenticator] API调用返回None或空结果")
                 
         except Exception as e:
             logger.error(f"[Authenticator] 获取用户 {user_id} 的QQ等级失败: {e}")

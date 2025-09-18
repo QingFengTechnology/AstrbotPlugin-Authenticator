@@ -8,6 +8,17 @@ from .automaticReview import AppReview
 from .simpleReCAPTCHA import ReCAPTCHA
 from .ban import BanManager
 
+def require_aiocqhttp_platform(func):
+    """检查平台是否为 aiocqhttp"""
+    async def wrapper(self, event: AstrMessageEvent, *args, **kwargs):
+        # 检查平台是否为 aiocqhttp
+        if event.get_platform_name() != "aiocqhttp":
+            logger.debug(f"[Authenticator] 检测到非 aiocqhttp 平台({event.get_platform_name()})，跳过执行。")
+            return
+        # 如果是 aiocqhttp 平台，则执行原函数
+        return await func(self, event, *args, **kwargs)
+    return wrapper
+
 # 主类定义
 class AuthenticatorPlugin(Star):
     def __init__(self, context: Context, config: Dict[str, Any]):
@@ -41,6 +52,7 @@ class AuthenticatorPlugin(Star):
         except Exception as e:
             logger.warning(f"应用monkey patch失败: {e}")
 
+    @require_aiocqhttp_platform
     @filter.event_message_type(filter.EventMessageType.ALL)
     async def handle_event(self, event: AstrMessageEvent):
         """处理所有事件"""
