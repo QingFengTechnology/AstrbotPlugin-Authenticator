@@ -14,7 +14,7 @@
 - 黑名单功能
   - 支持自动拒绝黑名单用户的加群请求
   - 支持忽略黑名单用户的消息
-  - 支持自动踢出黑名单用户
+  - ~~支持自动踢出黑名单用户~~
 
 ## 安装
 
@@ -32,30 +32,6 @@
 > 插件不会检测当前账号在触发操作的群聊是否为管理员。
 
 ## 配置
-
-### 黑名单功能配置
-
-黑名单功能提供以下配置选项：
-
-- **Ban_Enable**: 是否启用黑名单功能
-- **BanConfig_IgnoreUser**: 是否忽略黑名单用户的消息
-- **BanConfig_RejectInvitationConfig**: 拒绝加群请求配置
-  - **Enable**: 是否拒绝黑名单用户的加群请求
-  - **Reason**: 拒绝理由
-- **BanConfig_AutoKickConfig**: 自动踢出配置
-  - **Enable**: 是否自动踢出黑名单用户
-  - **Interval**: 检查间隔（秒）
-  - **Reason**: 踢出理由
-
-### 黑名单命令
-
-- `ban add <QQ号>` - 将用户添加到黑名单
-- `ban remove <QQ号>` - 从黑名单中移除用户
-- `ban list` - 查看当前黑名单列表
-- `ban check <QQ号>` - 检查用户是否在黑名单中
-
-> [!Note]
-> 黑名单命令需要管理员或群主权限才能执行。
 
 <details>
 <summary>插件原始配置文件(<code>_conf_schema.json</code>)</summary>

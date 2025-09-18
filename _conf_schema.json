@@ -207,6 +207,8 @@
           "BanConfig_AutoKickConfig": {
             "type": "object",
             "description": "自动踢出设置",
+            "hint": "此配置暂时无效。",
+            "invisible": true,
             "items": {
               "AutoKickConfig_Unit": {
                 "type": "string",

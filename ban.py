@@ -22,7 +22,6 @@ class BanManager:
         """
         self.config = config
         self.banned_users: Set[str] = set()  # 黑名单用户ID集合
-        self.auto_kick_task: Optional[asyncio.Task] = None
         self._load_config()
         
     def _load_config(self):
@@ -44,10 +43,10 @@ class BanManager:
         self.reject_invitation_enabled = reject_config["RejectInvitationConfig_Enable"]
         self.reject_reason = reject_config["RejectInvitationConfig_Reason"]
         
-        # 自动踢出配置
-        auto_kick_config = ban_config_settings["BanConfig_AutoKickConfig"]
-        self.auto_kick_unit = auto_kick_config["AutoKickConfig_Unit"]
-        self.auto_kick_time = auto_kick_config["AutoKickConfig_Time"]
+        # 自动踢出配置（已弃用，但保留配置加载以避免错误）
+        # auto_kick_config = ban_config_settings["BanConfig_AutoKickConfig"]
+        # self.auto_kick_unit = auto_kick_config["AutoKickConfig_Unit"]
+        # self.auto_kick_time = auto_kick_config["AutoKickConfig_Time"]
         
         # 白名单群组
         self.whitelist_groups = self.config["WhitelistGroups"]
@@ -62,7 +61,7 @@ class BanManager:
             logger.info(f"[Authenticator] 从配置加载了 {len(initial_ban_list)} 个初始黑名单用户")
         
         logger.debug(f"[Authenticator] 黑名单配置加载完成: 启用={self.enabled}, 忽略消息={self.ignore_user_messages}, "
-                    f"拒绝加群={self.reject_invitation_enabled}, 自动踢出间隔={self.auto_kick_time}{self.auto_kick_unit}, "
+                    f"拒绝加群={self.reject_invitation_enabled}, "
                     f"初始黑名单用户数={len(initial_ban_list)}")
     
     def is_enabled(self) -> bool:
@@ -217,175 +216,11 @@ class BanManager:
             logger.error(f"[Authenticator] 拒绝群聊申请失败: {e}")
             return False
     
-    def start_auto_kick_task(self, context):
-        """
-        启动自动踢出任务
-        
-        Args:
-            context: AstrBot上下文对象
-        """
-        if not self.enabled or self.auto_kick_time <= 0:
-            logger.debug("[Authenticator] 自动踢出功能未启用或间隔时间为0，不启动自动踢出任务")
-            return
-            
-        # 计算间隔时间（秒）
-        interval_seconds = self._get_interval_seconds()
-        
-        if interval_seconds <= 0:
-            logger.debug("[Authenticator] 自动踢出间隔时间为0，不启动自动踢出任务")
-            return
-            
-        logger.info(f"[Authenticator] 启动自动踢出任务，检查间隔: {interval_seconds}秒")
-        
-        # 创建异步任务
-        self.auto_kick_task = asyncio.create_task(
-            self._auto_kick_loop(context, interval_seconds)
-        )
-    
-    def _get_interval_seconds(self) -> int:
-        """
-        根据配置的单位和时间计算间隔秒数
-        
-        Returns:
-            间隔秒数
-        """
-        unit_multipliers = {
-            "Second": 1,
-            "Minute": 60,
-            "Hour": 3600,
-            "Day": 86400
-        }
-        
-        multiplier = unit_multipliers.get(self.auto_kick_unit, 3600)  # 默认使用小时
-        return self.auto_kick_time * multiplier
-    
-    async def _auto_kick_loop(self, context, interval_seconds: int):
-        """
-        自动踢出循环任务
-        
-        Args:
-            context: AstrBot上下文对象
-            interval_seconds: 检查间隔秒数
-        """
-        try:
-            while True:
-                await asyncio.sleep(interval_seconds)
-                
-                if not self.enabled or not self.banned_users:
-                    continue
-                    
-                logger.info(f"[Authenticator] 开始自动踢出检查，当前黑名单用户数: {len(self.banned_users)}")
-                
-                # 获取所有平台实例
-                platforms = context.platform_manager.get_insts()
-                
-                for platform in platforms:
-                    await self._check_and_kick_banned_users(platform)
-                    
-        except asyncio.CancelledError:
-            logger.info("[Authenticator] 自动踢出任务已被取消")
-        except Exception as e:
-            logger.error(f"[Authenticator] 自动踢出任务发生错误: {e}")
-    
-    async def _check_and_kick_banned_users(self, platform):
-        """
-        检查并踢出黑名单用户
-        
-        Args:
-            platform: 平台适配器实例
-        """
-        try:
-            # 获取平台上的所有群组
-            groups = await self._get_platform_groups(platform)
-            
-            for group_id in groups:
-                # 检查群组是否在白名单中
-                if self.whitelist_groups and str(group_id) not in self.whitelist_groups:
-                    continue
-                    
-                # 获取群成员列表
-                members = await self._get_group_members(platform, group_id)
-                
-                # 检查每个成员是否在黑名单中
-                for user_id in members:
-                    if self.is_banned(str(user_id)):
-                        logger.info(f"[Authenticator] 发现黑名单用户 {user_id} 在群 {group_id} 中，执行踢出操作")
-                        await self._kick_member(platform, group_id, user_id, "黑名单成员自动踢出")
-                        
-        except Exception as e:
-            logger.error(f"[Authenticator] 检查并踢出黑名单用户时发生错误: {e}")
-    
-    async def _get_platform_groups(self, platform) -> List[str]:
-        """
-        获取平台上的所有群组ID
-        
-        Args:
-            platform: 平台适配器实例
-            
-        Returns:
-            群组ID列表
-        """
-        try:
-            if hasattr(platform, 'get_group_list'):
-                groups = await platform.get_group_list()
-                return [str(group['group_id']) for group in groups] if groups else []
-            return []
-        except Exception as e:
-            logger.error(f"[Authenticator] 获取群组列表失败: {e}")
-            return []
-    
-    async def _get_group_members(self, platform, group_id: str) -> List[str]:
-        """
-        获取群成员列表
-        
-        Args:
-            platform: 平台适配器实例
-            group_id: 群组ID
-            
-        Returns:
-            成员ID列表
-        """
-        try:
-            if hasattr(platform, 'get_group_member_list'):
-                members = await platform.get_group_member_list(group_id=int(group_id))
-                return [str(member['user_id']) for member in members] if members else []
-            return []
-        except Exception as e:
-            logger.error(f"[Authenticator] 获取群 {group_id} 成员列表失败: {e}")
-            return []
-    
-    async def _kick_member(self, platform, group_id: str, user_id: str, reason: str = ""):
-        """
-        踢出群成员
-        
-        Args:
-            platform: 平台适配器实例
-            group_id: 群组ID
-            user_id: 用户ID
-            reason: 踢出理由
-            
-        Returns:
-            操作是否成功
-        """
-        try:
-            if hasattr(platform, 'set_group_kick'):
-                await platform.set_group_kick(
-                    group_id=int(group_id),
-                    user_id=int(user_id),
-                    reject_add_request=False
-                )
-                logger.info(f"[Authenticator] 已踢出用户 {user_id} 从群 {group_id}，理由: {reason}")
-                return True
-            return False
-        except Exception as e:
-            logger.error(f"[Authenticator] 踢出用户 {user_id} 从群 {group_id} 失败: {e}")
-            return False
+
     
     def stop_auto_kick_task(self):
-        """停止自动踢出任务"""
-        if self.auto_kick_task and not self.auto_kick_task.done():
-            self.auto_kick_task.cancel()
-            logger.info("[Authenticator] 自动踢出任务已停止")
+        """停止自动踢出任务（空实现，保持接口兼容性）"""
+        pass
     
     def cleanup(self):
         """清理资源"""

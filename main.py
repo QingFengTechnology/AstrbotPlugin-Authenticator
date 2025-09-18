@@ -21,8 +21,8 @@ class AuthenticatorPlugin(Star):
         
         self._apply_monkey_patch()
         
-        # 启动黑名单自动踢出任务
-        self.ban_manager.start_auto_kick_task(context)
+        # 启动黑名单自动踢出任务（已弃用）
+        # self.ban_manager.start_auto_kick_task(context)
         
         logger.debug("[Authenticator] 插件初始化完成。")
     
