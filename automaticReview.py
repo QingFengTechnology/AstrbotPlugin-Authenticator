@@ -116,18 +116,48 @@ class AppReview:
                 assert isinstance(event, AiocqhttpMessageEvent)
                 client = event.bot
                 
-                # 调用NapCat API获取用户信息
-                user_info = await client.get_stranger_info(user_id=int(user_id), no_cache=True)
-                if user_info and "level" in user_info:
-                    return int(user_info["level"])
+                logger.debug(f"[Authenticator] 开始获取用户 {user_id} 的QQ等级信息")
+                
+                # 调用NapCat API获取用户信息 - 使用正确的API调用方式
+                payloads = {
+                    "user_id": int(user_id),
+                    "no_cache": True
+                }
+                logger.debug(f"[Authenticator] 调用get_stranger_info API，参数: {payloads}")
+                
+                user_info = await client.api.call_action('get_stranger_info', **payloads)
+                logger.debug(f"[Authenticator] API返回结果: {user_info}")
+                
+                if user_info:
+                    # 根据实际API返回结构检查qqLevel字段
+                    if "qqLevel" in user_info:
+                        qq_level = int(user_info["qqLevel"])
+                        logger.debug(f"[Authenticator] 成功获取用户 {user_id} 的QQ等级: {qq_level}")
+                        return qq_level
+                    else:
+                        logger.debug(f"[Authenticator] 返回数据中缺少qqLevel字段，完整响应: {user_info}")
+                else:
+                    logger.debug(f"[Authenticator] API调用返回None或空结果")
+                    
             # 兼容其他平台的处理方式
             elif event.bot and hasattr(event.bot, "get_stranger_info"):
+                logger.debug(f"[Authenticator] 使用兼容模式获取用户 {user_id} 的QQ等级")
                 user_info = await event.bot.get_stranger_info(user_id=int(user_id), no_cache=True)
+                logger.debug(f"[Authenticator] 兼容模式返回结果: {user_info}")
                 if user_info and "level" in user_info:
-                    return int(user_info["level"])
+                    qq_level = int(user_info["level"])
+                    logger.debug(f"[Authenticator] 兼容模式成功获取用户 {user_id} 的QQ等级: {qq_level}")
+                    return qq_level
+                else:
+                    logger.debug(f"[Authenticator] 兼容模式获取失败或缺少level字段")
+            else:
+                logger.debug(f"[Authenticator] 不支持的平台或bot对象缺少get_stranger_info方法")
+                
         except Exception as e:
             logger.error(f"[Authenticator] 获取用户 {user_id} 的QQ等级失败: {e}")
+            logger.debug(f"[Authenticator] 异常详细信息:", exc_info=True)
         
+        logger.debug(f"[Authenticator] 最终返回默认等级: 0")
         return 0
 
     async def process_group_join_request(self, event: AstrMessageEvent, 
