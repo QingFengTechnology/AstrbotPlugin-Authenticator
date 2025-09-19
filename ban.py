@@ -219,17 +219,3 @@ class BanManager:
         self.stop_auto_kick_task()
         self.banned_users.clear()
         logger.debug("[Authenticator] 黑名单资源已清理")
-
-
-# 消息过滤器 - 用于忽略黑名单用户的消息
-@filter.event_message_type(filter.EventMessageType.ALL)
-async def ignore_banned_users(self, event: AstrMessageEvent):
-    """
-    忽略黑名单用户的消息
-    
-    这个过滤器应该在其他过滤器之前执行，以确保黑名单用户的消息不会被处理
-    """
-    if await self.ban_manager.should_ignore_user_message(event):
-        # 返回空结果，表示忽略此消息
-        return []
-    return None

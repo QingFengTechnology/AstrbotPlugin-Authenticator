@@ -70,6 +70,8 @@ class AuthenticatorPlugin(Star):
 
         # 对于其他类型的事件，检查是否应该忽略黑名单用户的消息
         if await self.ban_manager.should_ignore_user_message(event):
+            # 停止事件传播，阻止其他插件处理此消息
+            event.stop_event()
             return
         
         # 处理群消息和通知事件
