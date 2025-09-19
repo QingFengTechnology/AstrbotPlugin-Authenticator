@@ -31,8 +31,12 @@ class AppReview:
         # 获取关键词配置
         keywords_config = automatic_review["AutomaticReview_KeywordsConfig"]
         self.accept_keywords = keywords_config["KeywordsConfig_AcceptKeywords"]
-        self.reject_keywords = keywords_config["KeywordsConfig_RejectKeywords"]
-        self.reject_reason = keywords_config["KeywordsConfig_RejectReason"]
+        
+        # 获取拒绝配置（新的配置结构）
+        reject_config = keywords_config["KeywordsConfig_RejectConfig"]
+        self.reject_keywords = reject_config["RejectConfig_RejectKeywords"]
+        self.auto_reject = reject_config["RejectConfig_AutoReject"]
+        self.reject_reason = reject_config["RejectConfig_RejectReason"]
         
         # 获取等级限制配置
         level_config = automatic_review["AutomaticReview_LevelRestrictionsConfig"]
@@ -206,5 +210,13 @@ class AppReview:
                 logger.info(f"[Authenticator] 已根据关键词 '{keyword}' 同意用户 {user_id} 加入群 {group_id} 的请求。")
                 return
         
-        # 如果没有匹配到关键词，不做任何处理，等待手动审核
-        logger.info(f"[Authenticator] 用户 {user_id} 加入群 {group_id} 的请求未匹配到任意关键词，等待手动审核。")
+        # 如果没有匹配到关键词，根据AutoReject配置决定是否自动拒绝
+        if self.auto_reject:
+            if delay_seconds > 0:
+                logger.info(f"[Authenticator] 将在 {delay_seconds} 秒后根据AutoReject配置拒绝用户 {user_id} 加入群 {group_id} 的请求。")
+                await asyncio.sleep(delay_seconds)
+            await self.approve_request(event, flag, False, self.reject_reason)
+            logger.info(f"[Authenticator] 已根据AutoReject配置拒绝用户 {user_id} 加入群 {group_id} 的请求。")
+        else:
+            # 不做任何处理，等待手动审核
+            logger.info(f"[Authenticator] 用户 {user_id} 加入群 {group_id} 的请求未匹配到任意关键词，等待手动审核。")

@@ -63,13 +63,41 @@
             "hint": "当申请消息中包含这些关键词时，将自动同意加群请求。",
             "default": []
           },
-          "KeywordsConfig_RejectKeywords": {
-            "type": "list",
-            "description": "自动拒绝关键词",
-            "hint": "当申请消息中包含这些关键词时，将自动拒绝加群请求。",
-            "default": []
+          "KeywordsConfig_RejectConfig": {
+            "type": "object",
+            "description": "拒绝加群相关设置",
+            "items": {
+              "RejectConfig_RejectKeywords": {
+                "type": "list",
+                "description": "自动拒绝关键词",
+                "hint": "当申请消息中包含这些关键词时，将自动拒绝加群请求。",
+                "default": []
+              },
+              "RejectConfig_AutoReject": {
+                "type": "bool",
+                "description": "回答错误自动拒绝申请",
+                "hint": "申请消息若未命中自动同意的关键词，将自动拒绝加群请求。"
+              },
+              "RejectConfig_RejectReason": {
+                "type": "string",
+                "description": "拒绝申请时使用的理由",
+                "default": "申请被拒绝。"
+              }
+            }
+          }
+        }
+      },
+      "AutomaticReview_LevelRestrictionsConfig": {
+        "type": "object",
+        "description": "加群者等级限制配置",
+        "items": {
+          "LevelRestrictionsConfig_Number": {
+            "type": "int",
+            "description": "加群者等级限制",
+            "default": 0,
+            "hint": "加群者的QQ等级必须大于等于此值，否则将被强制拒绝，即使其回答命中关键词。设为0以禁用该功能。"
           },
-          "KeywordsConfig_RejectReason": {
+          "LevelRestrictionsConfig_RejectReason": {
             "type": "string",
             "description": "拒绝申请时使用的理由",
             "default": "申请被拒绝。"
@@ -178,6 +206,77 @@
                 "type": "string",
                 "default": "{at_user} 因未在规定时间内完成验证，已被请出本群。",
                 "hint": "成员被踢出后发送的公开消息，可用变量: {at_user}, {member_name}。"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "Ban": {
+    "type": "object",
+    "description": "黑名单相关配置",
+    "items": {
+      "Ban_Enable": {
+        "type": "bool",
+        "description": "是否启用黑名单功能",
+        "default": false
+      },
+      "BanConfig": {
+        "type": "object",
+        "description": "黑名单功能设置",
+        "items": {
+          "BanConfig_List": {
+            "type": "list",
+            "description": "黑名单列表",
+            "default": []
+          },
+          "BanConfig_IgnoreUser": {
+            "type": "bool",
+            "description": "忽略用户消息",
+            "hint": "阻止Astrbot回复该用户消息，这也会阻止其他插件(包括系统)回复。",
+            "default": false
+          },
+          "BanConfig_RejectInvitationConfig": {
+            "type": "object",
+            "description": "用户加群设置",
+            "items": {
+              "RejectInvitationConfig_Enable": {
+                "type": "bool",
+                "description": "阻止该用户加群",
+                "hint": "强制拒绝用户加入白名单群聊，即使其回答命中关键词。",
+                "default": false
+              },
+              "RejectInvitationConfig_Reason": {
+                "type": "string",
+                "description": "拒绝申请时使用的理由",
+                "default": "申请被拒绝。"
+              }
+            }
+          },
+          "BanConfig_AutoKickConfig": {
+            "type": "object",
+            "description": "自动踢出设置",
+            "hint": "此配置暂时无效。",
+            "invisible": true,
+            "items": {
+              "AutoKickConfig_Unit": {
+                "type": "string",
+                "description": "黑名单检查间隔单位",
+                "hint": "单位Second为秒，Minute为分，Hour为小时，Day为天。",
+                "options": [
+                  "Second",
+                  "Minute",
+                  "Hour",
+                  "Day"
+                ],
+                "default": "Hour"
+              },
+              "AutoKickConfig_Time": {
+                "type": "int",
+                "description": "黑名单成员检查间隔",
+                "default": 48,
+                "hint": "每多少单位时间检查一次黑名单成员是否在白名单群聊，若存在则踢出。设为0以禁用该功能。"
               }
             }
           }

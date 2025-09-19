@@ -24,16 +24,27 @@
             "hint": "当申请消息中包含这些关键词时，将自动同意加群请求。",
             "default": []
           },
-          "KeywordsConfig_RejectKeywords": {
-            "type": "list",
-            "description": "自动拒绝关键词",
-            "hint": "当申请消息中包含这些关键词时，将自动拒绝加群请求。",
-            "default": []
-          },
-          "KeywordsConfig_RejectReason": {
-            "type": "string",
-            "description": "拒绝申请时使用的理由",
-            "default": "申请被拒绝。"
+          "KeywordsConfig_RejectConfig": {
+            "type": "object",
+            "description": "拒绝加群相关设置",
+            "items": {
+              "RejectConfig_RejectKeywords": {
+                "type": "list",
+                "description": "自动拒绝关键词",
+                "hint": "当申请消息中包含这些关键词时，将自动拒绝加群请求。",
+                "default": []
+              },
+              "RejectConfig_AutoReject": {
+                "type": "bool",
+                "description": "回答错误自动拒绝申请",
+                "hint": "申请消息若未命中自动同意的关键词，将自动拒绝加群请求。"
+              },
+              "RejectConfig_RejectReason": {
+                "type": "string",
+                "description": "拒绝申请时使用的理由",
+                "default": "申请被拒绝。"
+              }
+            }
           }
         }
       },
