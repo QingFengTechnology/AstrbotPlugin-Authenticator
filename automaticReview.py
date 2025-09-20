@@ -192,7 +192,7 @@ class AppReview:
         
         # 根据关键词处理，优先检查拒绝关键词
         for keyword in self.reject_keywords:
-            if keyword.lower() in comment.lower():
+            if self._is_valid_keyword_match(comment, keyword):
                 if delay_seconds > 0:
                     logger.info(f"[Authenticator] 将在 {delay_seconds} 秒后根据关键词 '{keyword}' 拒绝用户 {user_id} 加入群 {group_id} 的请求。")
                     await asyncio.sleep(delay_seconds)
@@ -202,7 +202,7 @@ class AppReview:
         
         # 再检查是否包含接受关键词
         for keyword in self.accept_keywords:
-            if keyword.lower() in comment.lower():
+            if self._is_valid_keyword_match(comment, keyword):
                 if delay_seconds > 0:
                     logger.info(f"[Authenticator] 将在 {delay_seconds} 秒后根据关键词 '{keyword}' 同意用户 {user_id} 加入群 {group_id} 的请求。")
                     await asyncio.sleep(delay_seconds)
@@ -220,3 +220,124 @@ class AppReview:
         else:
             # 不做任何处理，等待手动审核
             logger.info(f"[Authenticator] 用户 {user_id} 加入群 {group_id} 的请求未匹配到任意关键词，等待手动审核。")
+    
+    def _is_valid_keyword_match(self, comment: str, keyword: str) -> bool:
+        """
+        智能判断关键词是否有效匹配
+        
+        避免数学方程中的数字被误判为答案
+        
+        Args:
+            comment: 用户输入的验证信息
+            keyword: 要匹配的关键词
+            
+        Returns:
+            是否有效匹配
+        """
+        comment_lower = comment.lower()
+        keyword_lower = keyword.lower()
+        
+        # 如果关键词是数字，需要更严格的匹配
+        if keyword_lower.isdigit() or (keyword_lower.startswith('-') and keyword_lower[1:].isdigit()):
+            # 检查是否是数学方程中的数字（在方程中出现）
+            if self._is_number_in_equation(comment_lower, keyword_lower):
+                return False
+            
+            # 检查是否是答案格式（如"x=2", "答案：2", "答案是2"等）
+            if self._is_answer_format(comment_lower, keyword_lower):
+                return True
+                
+            # 对于数字关键词，如果不是在答案格式中，不匹配
+            return False
+        
+        # 对于非数字关键词，使用简单的包含匹配
+        return keyword_lower in comment_lower
+    
+    def _is_number_in_equation(self, comment: str, number: str) -> bool:
+        """检查数字是否出现在数学方程中"""
+        # 检查评论是否包含方程关键词
+        equation_keywords = ['方程', '解', '=', '+', '-', '*', '/', '^', 'x', 'y', 'z']
+        
+        has_equation_keyword = any(keyword in comment for keyword in equation_keywords)
+        if not has_equation_keyword:
+            return False
+            
+        # 找到数字的位置
+        number_pos = comment.find(number)
+        if number_pos == -1:
+            return False
+            
+        # 如果数字作为答案出现，就不认为是方程中的数字
+        # 先检查是否是答案格式
+        if self._is_answer_format(comment, number):
+            return False
+            
+        # 简单方法：如果评论包含明确的答案部分，且数字在答案部分，就不认为是方程中的数字
+        answer_keywords = ['答案', '答', '结果为', '结果是', 'x=', 'y=', 'z=']
+        
+        for keyword in answer_keywords:
+            keyword_pos = comment.find(keyword)
+            if keyword_pos != -1 and number_pos > keyword_pos:
+                # 数字在答案关键词之后，不认为是方程中的数字
+                return False
+        
+        # 如果包含方程关键词且数字不在明确的答案部分，则认为数字在方程中
+        return True
+    
+    def _is_answer_format(self, comment: str, number: str) -> bool:
+        """
+        判断数字是否以答案格式出现
+        """
+        # 答案格式模式（更宽松的匹配）
+        answer_patterns = [
+            f'答案{number}',
+            f'答案是{number}',
+            f'答案为{number}',
+            f'x={number}',
+            f'y={number}', 
+            f'z={number}',
+            f'={number}',
+            f'答：{number}',
+            f'答 {number}',
+            f'结果{number}',
+            f'结果是{number}',
+            f'答案：{number}',
+            f'答案 {number}',
+            f'结果为{number}',
+            f'结果：{number}'
+        ]
+        
+        # 检查是否匹配任何答案格式
+        for pattern in answer_patterns:
+            if pattern in comment:
+                return True
+        
+        # 特殊处理：如果评论以数字结尾，且前面有答案关键词
+        answer_keywords = ['答案', '答', '结果', 'x', 'y', 'z']
+        for keyword in answer_keywords:
+            # 检查格式如："答案：2"、"答 2"、"x=2"等
+            if f'{keyword}{number}' in comment or \
+               f'{keyword}：{number}' in comment or \
+               f'{keyword} {number}' in comment or \
+               f'{keyword}={number}' in comment:
+                return True
+        
+        # 检查数字是否出现在答案部分
+        answer_keyword_positions = []
+        answer_keywords_full = ['答案', '答', '结果', '答案是', '结果为']
+        
+        for keyword in answer_keywords_full:
+            pos = comment.find(keyword)
+            if pos != -1:
+                answer_keyword_positions.append(pos)
+        
+        if answer_keyword_positions:
+            # 找到数字的位置
+            number_pos = comment.find(number)
+            if number_pos != -1:
+                # 如果数字出现在某个答案关键词之后，认为是答案
+                for keyword_pos in answer_keyword_positions:
+                    if number_pos > keyword_pos:
+                        return True
+        
+        return False
