@@ -7,13 +7,13 @@ from astrbot.api.star import Context, Star
 from .automaticReview import AppReview
 from .simpleReCAPTCHA import ReCAPTCHA
 from .ban import BanManager
+from .function.utils import check_platform
 
 def require_aiocqhttp_platform(func):
     """检查平台是否为 aiocqhttp"""
     async def wrapper(self, event: AstrMessageEvent, *args, **kwargs):
         # 检查平台是否为 aiocqhttp
-        if event.get_platform_name() != "aiocqhttp":
-            logger.debug(f"[Authenticator] 检测到非 aiocqhttp 平台({event.get_platform_name()})，跳过执行。")
+        if not check_platform(event):
             return
         # 如果是 aiocqhttp 平台，则执行原函数
         return await func(self, event, *args, **kwargs)

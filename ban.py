@@ -9,6 +9,7 @@ from typing import Dict, Any, Set, List, Optional
 from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent, filter
 
+from .function.utils import check_platform
 
 class BanManager:
     """黑名单管理器"""
@@ -184,8 +185,7 @@ class BanManager:
             操作是否成功
         """
         # 检查是否为aiocqhttp平台
-        if event.get_platform_name() != "aiocqhttp":
-            logger.debug(f"[Authenticator] 插件仅支持 aiocqhttp 平台处理群聊申请，当前平台: {event.get_platform_name()}，跳过操作。")
+        if not check_platform(event):
             return False
             
         try:

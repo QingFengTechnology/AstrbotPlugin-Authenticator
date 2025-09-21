@@ -2,6 +2,8 @@
 通用工具函数模块
 """
 from typing import Any
+from astrbot.api import logger
+from astrbot.api.event import AstrMessageEvent
 
 
 def safe_format(template: str, **kwargs: Any) -> str:
@@ -20,3 +22,19 @@ def safe_format(template: str, **kwargs: Any) -> str:
         def __missing__(self, key):
             return f'{{{key}}}'
     return template.format_map(SafeDict(kwargs))
+
+def check_platform(event: AstrMessageEvent) -> bool:
+    """
+    检查平台是否为AiocqhttpAdapter
+    
+    Args:
+        event: 消息事件
+        
+    Returns:
+        如果是AiocqhttpAdapter平台返回True，否则返回False
+    """
+    platform_name = event.get_platform_name()
+    if platform_name != "aiocqhttp":
+        logger.debug(f"[Authenticator] 跳过非aiocqhttp平台事件: {platform_name}")
+        return False
+    return True

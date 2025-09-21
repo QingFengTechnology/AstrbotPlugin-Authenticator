@@ -9,6 +9,7 @@ from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent
 
 from .function.apifox_model import ApifoxModel
+from .function.utils import check_platform
 
 
 class AppReview:
@@ -63,39 +64,43 @@ class AppReview:
         """
         try:
             # 检查是否为aiocqhttp平台
-            if event.get_platform_name() == "aiocqhttp":
-                # 使用NapCat API格式
-                from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import AiocqhttpMessageEvent
-                assert isinstance(event, AiocqhttpMessageEvent)
-                client = event.bot
-                
-                # 创建ApifoxModel实例
-                api_model = ApifoxModel(
-                    approve=approve,
-                    flag=flag,
-                    reason=reason
-                )
-                
-                # 调用NapCat API
-                payloads = {
-                    "flag": api_model.flag,
-                    "sub_type": "add",
-                    "approve": api_model.approve,
-                    "reason": api_model.reason if api_model.reason else ""
-                }
-                
-                await client.call_action('set_group_add_request', **payloads)
-                return True
-            # 兼容其他平台的处理方式
-            elif event.bot and hasattr(event.bot, "call_action"):
-                await event.bot.call_action(
-                    "set_group_add_request",
-                    flag=flag,
-                    sub_type="add",
-                    approve=approve,
-                    reason=reason
-                )
-                return True
+            if not check_platform(event):
+                # 兼容其他平台的处理方式
+                if event.bot and hasattr(event.bot, "call_action"):
+                    await event.bot.call_action(
+                        "set_group_add_request",
+                        flag=flag,
+                        sub_type="add",
+                        approve=approve,
+                        reason=reason
+                    )
+                    return True
+                return False
+            
+            # 使用NapCat API格式
+            from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import AiocqhttpMessageEvent
+            assert isinstance(event, AiocqhttpMessageEvent)
+            client = event.bot
+            
+            # 创建ApifoxModel实例
+            api_model = ApifoxModel(
+                approve=approve,
+                flag=flag,
+                reason=reason
+            )
+            
+            # 调用NapCat API
+            payloads = {
+                "flag": api_model.flag,
+                "sub_type": "add",
+                "approve": api_model.approve,
+                "reason": api_model.reason if api_model.reason else ""
+            }
+            
+            await client.call_action('set_group_add_request', **payloads)
+            return True
+        except Exception as e:
+            logger.error(f"[Authenticator] 处理群聊申请失败: {e}")
             return False
         except Exception as e:
             logger.error(f"[Authenticator] 处理群聊申请失败: {e}")
@@ -113,8 +118,7 @@ class AppReview:
             用户的QQ等级，如果获取失败返回0
         """
         # 检查是否为aiocqhttp平台
-        if event.get_platform_name() != "aiocqhttp":
-            logger.debug(f"[Authenticator] 插件仅支持 aiocqhttp 平台获取用户等级，当前平台: {event.get_platform_name()}，返回默认等级。")
+        if not check_platform(event):
             return 0
             
         try:
