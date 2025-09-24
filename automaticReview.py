@@ -42,6 +42,7 @@ class AppReview:
         # 获取等级限制配置
         level_config = automatic_review["AutomaticReview_LevelRestrictionsConfig"]
         self.level_restriction = level_config["LevelRestrictionsConfig_Number"]
+        self.reject_invalid_level = level_config["LevelRestrictionsConfig_RejectInvaildLevel"]
         self.level_reject_reason = level_config["LevelRestrictionsConfig_RejectReason"]
         
         # 获取其他配置
@@ -183,7 +184,17 @@ class AppReview:
             user_level = await self.get_user_level(event, user_id)
             logger.info(f"[Authenticator] 用户 {user_id} 的QQ等级为: {user_level}, 限制等级为: {self.level_restriction}")
             
-            if user_level < self.level_restriction:
+            # 如果获取等级失败（返回0）且启用了拒绝无效等级用户
+            if user_level == 0 and self.reject_invalid_level:
+                if delay_seconds > 0:
+                    logger.info(f"[Authenticator] 将在 {delay_seconds} 秒后根据等级限制（获取等级失败）拒绝用户 {user_id} 加入群 {group_id} 的请求。")
+                    await asyncio.sleep(delay_seconds)
+                await self.approve_request(event, flag, False, self.level_reject_reason)
+                logger.info(f"[Authenticator] 已根据等级限制（获取等级失败）拒绝用户 {user_id} 加入群 {group_id} 的请求。")
+                return
+            
+            # 如果成功获取到等级且等级低于限制
+            if user_level > 0 and user_level < self.level_restriction:
                 if delay_seconds > 0:
                     logger.info(f"[Authenticator] 将在 {delay_seconds} 秒后根据等级限制拒绝用户 {user_id} 加入群 {group_id} 的请求。")
                     await asyncio.sleep(delay_seconds)

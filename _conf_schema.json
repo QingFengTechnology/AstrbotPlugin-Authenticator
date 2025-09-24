@@ -58,6 +58,12 @@
             "default": 0,
             "hint": "加群者的QQ等级必须大于等于此值，否则将被强制拒绝，即使其回答命中关键词。设为0以禁用该功能。"
           },
+          "LevelRestrictionsConfig_RejectInvaildLevel": {
+            "type": "bool",
+            "description": "仍然拒绝获取等级失败的用户",
+            "default": false,
+            "hint": "某些用户不会在个人资料卡展示自己的 QQ 等级，这会导致获取等级失败。若不启用此选项这些用户将被机器人忽略不作处理。"
+          },
           "LevelRestrictionsConfig_RejectReason": {
             "type": "string",
             "description": "拒绝申请时使用的理由",
