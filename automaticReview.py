@@ -102,9 +102,6 @@ class AppReview:
         except Exception as e:
             logger.error(f"[Authenticator] 处理群聊申请失败: {e}")
             return False
-        except Exception as e:
-            logger.error(f"[Authenticator] 处理群聊申请失败: {e}")
-            return False
     
     async def get_user_level(self, event: AstrMessageEvent, user_id: str) -> int:
         """
