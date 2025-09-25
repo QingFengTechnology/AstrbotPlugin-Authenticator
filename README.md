@@ -121,17 +121,23 @@
         "description": "是否启用人机验证功能",
         "default": false
       },
-      "SimpleReCAPTCHA_VerificationTimeout": {
-        "description": "验证超时时间",
-        "type": "int",
-        "default": 180,
-        "hint": "成员须在此时间内完成验证，否则将被踢出，单位为秒。"
-      },
-      "SimpleReCAPTCHA_KickDelay": {
-        "description": "验证超时后踢出延迟",
-        "type": "int",
-        "default": 3,
-        "hint": "发送验证超时消息后，等待多少秒再执行踢出操作。"
+      "SimpleReCAPTCHA_TimeConfig": {
+        "type": "object",
+        "description": "验证时间配置",
+        "items": {
+          "TimeConfig_VerificationTimeout": {
+            "description": "验证超时时间",
+            "type": "int",
+            "default": 180,
+            "hint": "成员须在此时间内完成验证，否则将被踢出，单位为秒。"
+          },
+          "TimeConfig_KickDelay": {
+            "description": "验证超时后踢出延迟",
+            "type": "int",
+            "default": 3,
+            "hint": "发送验证超时消息后，等待多少秒再执行踢出操作。"
+          }
+        }
       },
       "SimpleReCAPTCHA_MessageConfig": {
         "type": "object",

@@ -32,8 +32,9 @@ class ReCAPTCHA:
         recaptcha_config = config["SimpleReCAPTCHA"]
         
         # 获取基础配置
-        self.verification_timeout = recaptcha_config["SimpleReCAPTCHA_VerificationTimeout"]
-        self.kick_delay = recaptcha_config["SimpleReCAPTCHA_KickDelay"]
+        time_config = recaptcha_config["SimpleReCAPTCHA_TimeConfig"]
+        self.verification_timeout = time_config["TimeConfig_VerificationTimeout"]
+        self.kick_delay = time_config["TimeConfig_KickDelay"]
         
         # 获取消息配置
         message_config = recaptcha_config["SimpleReCAPTCHA_MessageConfig"]
