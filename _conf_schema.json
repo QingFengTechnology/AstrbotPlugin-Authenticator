@@ -106,6 +106,34 @@
           }
         }
       },
+      "SimpleReCAPTCHA_DifficultyConfig": {
+        "type": "object",
+        "description": "验证难度设置",
+        "items": {
+          "DifficultyConfig_MinNumber": {
+            "type": "int",
+            "description": "题目中数字最小值",
+            "default": 0
+          },
+          "DifficultyConfig_MaxNumber": {
+            "type": "int",
+            "description": "题目中数字最大值",
+            "default": 100
+          },
+          "DifficultyConfig_MinimumDifference": {
+            "type": "int",
+            "description": "题目中数字最小差值",
+            "default": 0,
+            "hint": "此选项可防止出现题目中出现题目计算难度过小的情况，设为0以禁用该功能。"
+          },
+          "DifficultyConfig_DisableInteger": {
+            "type": "bool",
+            "description": "防止随机末尾为0的数字",
+            "default": false,
+            "hint": "阻止随机到整十整百这类的数字以防止计算难度过小。"
+          }
+        }
+      },
       "SimpleReCAPTCHA_MessageConfig": {
         "type": "object",
         "description": "验证消息配置",

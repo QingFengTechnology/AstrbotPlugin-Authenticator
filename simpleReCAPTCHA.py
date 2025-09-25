@@ -36,6 +36,13 @@ class ReCAPTCHA:
         self.verification_timeout = time_config["TimeConfig_VerificationTimeout"]
         self.kick_delay = time_config["TimeConfig_KickDelay"]
         
+        # 获取难度配置
+        difficulty_config = recaptcha_config["SimpleReCAPTCHA_DifficultyConfig"]
+        self.min_number = difficulty_config["DifficultyConfig_MinNumber"]
+        self.max_number = difficulty_config["DifficultyConfig_MaxNumber"]
+        self.min_difference = difficulty_config["DifficultyConfig_MinimumDifference"]
+        self.disable_integer = difficulty_config["DifficultyConfig_DisableInteger"]
+        
         # 获取消息配置
         message_config = recaptcha_config["SimpleReCAPTCHA_MessageConfig"]
         self.new_member_prompt = message_config["MessageConfig_Join"]
@@ -61,21 +68,53 @@ class ReCAPTCHA:
 
     def generate_math_problem(self) -> Tuple[str, int]:
         """
-        生成一个100以内的加减法问题
+        生成一个基于配置的加减法问题
         
         Returns:
             Tuple[问题描述, 正确答案]
         """
         op_type = random.choice(['add', 'sub'])
+        
         if op_type == 'add':
-            num1 = random.randint(0, 100)
-            num2 = random.randint(0, 100 - num1)
+            # 生成加法题目
+            num1 = self._generate_valid_number()
+            max_num2 = min(self.max_number - num1, self.max_number)
+            
+            # 确保num2满足最小差值要求
+            min_num2 = max(self.min_number, self.min_difference - num1) if self.min_difference > 0 else self.min_number
+            
+            if min_num2 > max_num2:
+                # 如果无法满足最小差值要求，重新生成num1
+                return self.generate_math_problem()
+                
+            num2 = random.randint(min_num2, max_num2)
             answer = num1 + num2
             question = f"{num1} + {num2} = ?"
             return question, answer
         else:
-            num1 = random.randint(1, 100)
-            num2 = random.randint(0, num1)
+            # 生成减法题目
+            # 确保num1大于等于num2，且差值满足最小差值要求
+            min_num1 = max(self.min_number + 1, self.min_difference) if self.min_difference > 0 else self.min_number + 1
+            
+            if min_num1 > self.max_number:
+                # 如果无法满足最小差值要求，重新生成
+                return self.generate_math_problem()
+                
+            num1 = random.randint(min_num1, self.max_number)
+            
+            # num2的范围：从min_number到num1-1，但要确保差值满足最小差值要求
+            max_num2 = num1 - 1
+            min_num2 = max(self.min_number, num1 - self.max_number)
+            
+            # 如果设置了最小差值，确保num1 - num2 >= min_difference
+            if self.min_difference > 0:
+                min_num2 = max(min_num2, num1 - self.max_number, num1 - self.min_difference)
+                
+            if min_num2 > max_num2:
+                # 如果无法满足要求，重新生成
+                return self.generate_math_problem()
+                
+            num2 = random.randint(min_num2, max_num2)
             answer = num1 - num2
             question = f"{num1} - {num2} = ?"
             return question, answer
@@ -302,3 +341,23 @@ class ReCAPTCHA:
             if task and not task.done():
                 task.cancel()
         self.pending.clear()
+
+    def _generate_valid_number(self) -> int:
+        """
+        生成一个有效的数字，根据DisableInteger配置决定是否排除整十整百的数字
+        
+        Returns:
+            生成的数字
+        """
+        while True:
+            num = random.randint(self.min_number, self.max_number)
+            
+            # 如果不需要禁用整数，直接返回
+            if not self.disable_integer:
+                return num
+            
+            # 检查是否为整十整百的数字（末尾为0）
+            if num % 10 != 0:
+                return num
+            
+            # 如果是整十整百的数字，继续循环生成新的数字
