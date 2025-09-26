@@ -100,7 +100,11 @@ class ReCAPTCHA:
                 # 如果无法满足最小差值要求，重新生成
                 return self.generate_math_problem()
                 
-            num1 = random.randint(min_num1, self.max_number)
+            num1 = self._generate_valid_number()
+            
+            # 确保num1在有效范围内
+            if num1 < min_num1 or num1 > self.max_number:
+                return self.generate_math_problem()
             
             # num2的范围：从min_number到num1-1，但要确保差值满足最小差值要求
             max_num2 = num1 - 1
