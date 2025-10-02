@@ -97,10 +97,83 @@
             "default": 0,
             "hint": "加群者的QQ等级必须大于等于此值，否则将被强制拒绝，即使其回答命中关键词。设为0以禁用该功能。"
           },
+          "LevelRestrictionsConfig_RejectInvaildLevel": {
+            "type": "bool",
+            "description": "仍然拒绝获取等级失败的用户",
+            "default": false,
+            "hint": "某些用户不会在个人资料卡展示自己的 QQ 等级，这会导致获取等级失败。若不启用此选项这些用户将被机器人忽略不作处理。"
+          },
           "LevelRestrictionsConfig_RejectReason": {
             "type": "string",
             "description": "拒绝申请时使用的理由",
             "default": "申请被拒绝。"
+          }
+        }
+      },
+      "AutomaticReview_RateLimitConfig": {
+        "type": "object",
+        "description": "加群速率限制配置",
+        "items": {
+          "RateLimitConfig_ThresholdConfig": {
+            "type": "object",
+            "description": "加群速率限制阈值配置",
+            "items": {
+              "ThresholdConfig_Frequency": {
+                "type": "int",
+                "description": "加群速率限制阈值",
+                "default": 0,
+                "hint": "在单位时间内允许单用户的加群请求次数，超出将触发速率限制，设为0以禁用该功能。"
+              },
+              "ThresholdConfig_Time": {
+                "type": "int",
+                "description": "速率限制统计时间",
+                "default": 24,
+                "hint": "从首次申请开始计时，该时间段内的加群请求将被统计用于速率限制。时间结束后未达限制则重置，设为0则表示不重置时间。"
+              },
+              "RateLimitConfig_Unit": {
+                "type": "string",
+                "description": "统计时间单位",
+                "default": "Hour",
+                "options": [
+                  "Minute",
+                  "Hour",
+                  "Day"
+                ]
+              }
+            }
+          },
+          "RateLimitConfig_RejectReason": {
+            "type": "string",
+            "description": "拒绝申请时使用的理由",
+            "default": "申请被拒绝，请等待{time}{unit}后再试。",
+            "hint": "可用占位符：{time}，{unit}。"
+          },
+          "RateLimitConfig_LimitConfig": {
+            "type": "object",
+            "description": "加群速率限制配置",
+            "items": {
+              "RateLimitConfig_Time": {
+                "type": "int",
+                "description": "加群速率限制时间",
+                "default": 12,
+                "hint": "当用户触发速率限制后，要等待多久才允许其再次加群，在此期间内该用户的加群请求将被强制拒绝。"
+              },
+              "RateLimitConfig_Unit": {
+                "type": "string",
+                "description": "加群速率限制时间单位",
+                "default": "Hour",
+                "options": [
+                  "Minute",
+                  "Hour",
+                  "Day"
+                ]
+              },
+              "RateLimitConfig_AutoBan": {
+                "type": "bool",
+                "description": "自动拉黑该用户",
+                "hint": "触发速率限制的用户将被直接添加至黑名单，你可以在下方黑名单配置中移除。"
+              }
+            }
           }
         }
       },
@@ -139,6 +212,34 @@
           }
         }
       },
+      "SimpleReCAPTCHA_DifficultyConfig": {
+        "type": "object",
+        "description": "验证难度设置",
+        "items": {
+          "DifficultyConfig_MinNumber": {
+            "type": "int",
+            "description": "题目中数字最小值",
+            "default": 0
+          },
+          "DifficultyConfig_MaxNumber": {
+            "type": "int",
+            "description": "题目中数字最大值",
+            "default": 100
+          },
+          "DifficultyConfig_MinimumDifference": {
+            "type": "int",
+            "description": "题目中数字最小差值",
+            "default": 0,
+            "hint": "此选项可防止出现题目中出现题目计算难度过小的情况，设为0以禁用该功能。"
+          },
+          "DifficultyConfig_DisableInteger": {
+            "type": "bool",
+            "description": "防止随机末尾为0的数字",
+            "default": false,
+            "hint": "阻止随机到整十整百这类的数字以防止计算难度过小。"
+          }
+        }
+      },
       "SimpleReCAPTCHA_MessageConfig": {
         "type": "object",
         "description": "验证消息配置",
@@ -149,19 +250,19 @@
             "description": "成员入群提示",
             "type": "string",
             "default": "{at_user} 欢迎加入本群！请在 {timeout} 分钟内 @我 并回答下面的问题以完成验证：\n{question}",
-            "hint": "成员入群时发送的验证信息，可用变量: {at_user}, {member_name}, {question}, {timeout}。"
+            "hint": "成员入群时发送的验证信息，可用占位符: {at_user}, {member_name}, {question}, {timeout}。"
           },
           "MessageConfig_Success": {
             "description": "验证成功提示",
             "type": "string",
             "default": "{at_user} 验证成功，欢迎你的加入！",
-            "hint": "成员回答正确后发送的消息，可用变量: {at_user}, {member_name}。"
+            "hint": "成员回答正确后发送的消息，可用占位符: {at_user}, {member_name}。"
           },
           "MessageConfig_Wrong": {
             "description": "答案错误提示",
             "type": "string",
             "default": "{at_user} 答案错误，请重新回答验证。这是你的新问题：\n{question}",
-            "hint": "成员回答错误后发送的消息，之后会自动生成新问题。可用变量: {at_user}, {question}。"
+            "hint": "成员回答错误后发送的消息，之后会自动生成新问题。可用占位符: {at_user}, {question}。"
           },
           "MessageConfig_CountdownWarningConfig": {
             "type": "object",
@@ -177,7 +278,7 @@
                 "description": "超时警告提示",
                 "type": "string",
                 "default": "{at_user} 验证即将超时，请尽快查看我的验证消息并进行人机验证！",
-                "hint": "在验证即将超时前发送的警告消息，可用变量: {at_user}, {member_name}。"
+                "hint": "在验证即将超时前发送的警告消息，可用占位符: {at_user}, {member_name}。"
               }
             }
           },
@@ -194,7 +295,7 @@
                 "description": "验证超时提示",
                 "type": "string",
                 "default": "{at_user} 验证超时，请重新申请加入本群。",
-                "hint": "成员验证超时后发送的消息，可用变量: {at_user}, {member_name}。"
+                "hint": "成员验证超时后发送的消息，可用占位符: {at_user}, {member_name}。"
               }
             }
           },
@@ -211,7 +312,7 @@
                 "description": "最终踢出提示",
                 "type": "string",
                 "default": "{at_user} 因未在规定时间内完成验证，已被请出本群。",
-                "hint": "成员被踢出后发送的公开消息，可用变量: {at_user}, {member_name}。"
+                "hint": "成员被踢出后发送的公开消息，可用占位符: {at_user}, {member_name}。"
               }
             }
           }
@@ -297,10 +398,17 @@
 
 ### 配置占位符定义
 
+`SimpleReCAPTCHA_MessageConfig`通用：
 - **{at_user}**：@目标用户。
 - **{member_name}**：目标用户的昵称。
-- **{question}**：当前验证问题。
-- **{timeout}**：*仅部分配置可用*，验证超时时间，这将自动转为分钟。
+- **{question}**：当前验证题目。
+
+仅`MessageConfig_Join`可用：
+- **{timeout}**：验证超时时间，这将自动转为分钟。
+
+仅`RateLimitConfig_RejectReason`可用：
+- **{time}**：加群速率限制时间，可在`RateLimitConfig_Time`中设置该值。
+- **{Unit}**：加群速率限制时间单位，可在`RateLimitConfig_Unit`中设置。
 
 ## 鸣谢
 
