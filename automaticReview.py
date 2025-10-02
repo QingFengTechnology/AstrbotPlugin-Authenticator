@@ -3,7 +3,8 @@
 处理群聊加群请求的自动审核功能
 """
 import asyncio
-from typing import Dict, Any, Optional
+import time
+from typing import Dict, Any, Optional, List, Tuple
 
 from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent
@@ -15,13 +16,15 @@ from .function.utils import check_platform
 class AppReview:
     """加群审核处理器"""
     
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Dict[str, Any], ban_manager: Optional[Any] = None):
         """
         初始化加群审核模块
         
         Args:
             config: 插件配置
+            ban_manager: 黑名单管理器实例（可选）
         """
+        self.ban_manager = ban_manager
         self._load_config(config)
     
     def _load_config(self, config: Dict[str, Any]):
@@ -45,9 +48,28 @@ class AppReview:
         self.reject_invalid_level = level_config["LevelRestrictionsConfig_RejectInvaildLevel"]
         self.level_reject_reason = level_config["LevelRestrictionsConfig_RejectReason"]
         
+        # 获取速率限制配置
+        rate_limit_config = automatic_review["AutomaticReview_RateLimitConfig"]
+        threshold_config = rate_limit_config["RateLimitConfig_ThresholdConfig"]
+        limit_config = rate_limit_config["RateLimitConfig_LimitConfig"]
+        
+        # 阈值配置
+        self.rate_limit_frequency = threshold_config["ThresholdConfig_Frequency"]
+        self.rate_limit_time = threshold_config["ThresholdConfig_Time"]
+        self.rate_limit_unit = threshold_config["RateLimitConfig_Unit"]
+        
+        # 限制配置
+        self.rate_limit_duration = limit_config["RateLimitConfig_Time"]
+        self.rate_limit_duration_unit = limit_config["RateLimitConfig_Unit"]
+        self.rate_limit_auto_ban = limit_config["RateLimitConfig_AutoBan"]
+        
         # 获取其他配置
         self.delay_seconds = automatic_review["AutomaticReview_DelaySeconds"]
         self.whitelist_groups = config["WhitelistGroups"]
+        
+        # 速率限制数据结构
+        self.user_request_history: Dict[str, List[float]] = {}  # 用户ID -> 请求时间戳列表
+        self.rate_limited_users: Dict[str, float] = {}  # 用户ID -> 限制结束时间戳
     
     async def approve_request(self, event: AstrMessageEvent, flag: str, 
                              approve: bool = True, reason: str = "") -> bool:
@@ -179,6 +201,40 @@ class AppReview:
         # 获取延迟时间
         delay_seconds = self.delay_seconds
         
+        # 检查速率限制（如果启用了速率限制）
+        is_rate_limited, rate_limit_reason = self._is_user_rate_limited(user_id)
+        if is_rate_limited:
+            # 记录当前请求（即使被限制也要记录）
+            self._record_user_request(user_id)
+            
+            if delay_seconds > 0:
+                logger.info(f"[Authenticator] 将在 {delay_seconds} 秒后根据速率限制拒绝用户 {user_id} 加入群 {group_id} 的请求。")
+                await asyncio.sleep(delay_seconds)
+            
+            # 使用速率限制特定的拒绝理由
+            reject_reason = rate_limit_reason if rate_limit_reason else "加群请求过于频繁，请稍后再试"
+            await self.approve_request(event, flag, False, reject_reason)
+            logger.info(f"[Authenticator] 已根据速率限制拒绝用户 {user_id} 加入群 {group_id} 的请求。")
+            
+            # 如果启用了自动拉黑，将用户添加到黑名单
+            if self.rate_limit_auto_ban and self.ban_manager:
+                try:
+                    # 调用黑名单管理器的添加方法
+                    success = self.ban_manager.add_to_ban_list(user_id)
+                    if success:
+                        logger.info(f"[Authenticator] 用户 {user_id} 触发速率限制，已自动添加到黑名单")
+                    else:
+                        logger.warning(f"[Authenticator] 用户 {user_id} 触发速率限制，但添加到黑名单失败（可能已在黑名单中）")
+                except Exception as e:
+                    logger.error(f"[Authenticator] 自动拉黑用户 {user_id} 时发生错误: {e}")
+            elif self.rate_limit_auto_ban and not self.ban_manager:
+                logger.warning(f"[Authenticator] 用户 {user_id} 触发速率限制，但黑名单管理器不可用，无法自动拉黑")
+            
+            return
+        
+        # 记录用户的加群请求
+        self._record_user_request(user_id)
+        
         # 检查等级限制（如果启用了等级限制）
         if self.level_restriction > 0:
             user_level = await self.get_user_level(event, user_id)
@@ -232,6 +288,110 @@ class AppReview:
         else:
             # 不做任何处理，等待手动审核
             logger.info(f"[Authenticator] 用户 {user_id} 加入群 {group_id} 的请求未匹配到任意关键词，等待手动审核。")
+    
+    def _convert_time_to_seconds(self, time_value: int, unit: str) -> int:
+        """
+        将时间值转换为秒数
+        
+        Args:
+            time_value: 时间数值
+            unit: 时间单位（Minute/Hour/Day）
+            
+        Returns:
+            对应的秒数
+        """
+        if unit == "Minute":
+            return time_value * 60
+        elif unit == "Hour":
+            return time_value * 3600
+        elif unit == "Day":
+            return time_value * 86400
+        else:
+            return time_value  # 默认按秒处理
+    
+    def _cleanup_old_requests(self, user_id: str) -> None:
+        """
+        清理用户的旧请求记录
+        
+        Args:
+            user_id: 用户ID
+        """
+        if user_id not in self.user_request_history:
+            return
+            
+        current_time = time.time()
+        time_window = self._convert_time_to_seconds(self.rate_limit_time, self.rate_limit_unit)
+        
+        # 只保留在时间窗口内的请求记录
+        self.user_request_history[user_id] = [
+            timestamp for timestamp in self.user_request_history[user_id]
+            if current_time - timestamp <= time_window
+        ]
+        
+        # 如果清理后没有记录，删除用户条目
+        if not self.user_request_history[user_id]:
+            del self.user_request_history[user_id]
+    
+    def _is_user_rate_limited(self, user_id: str) -> Tuple[bool, Optional[str]]:
+        """
+        检查用户是否被速率限制
+        
+        Args:
+            user_id: 用户ID
+            
+        Returns:
+            (是否被限制, 限制原因)
+        """
+        # 如果速率限制功能被禁用，直接返回
+        if self.rate_limit_frequency <= 0:
+            return False, None
+        
+        current_time = time.time()
+        
+        # 检查是否在限制期内
+        if user_id in self.rate_limited_users:
+            if current_time < self.rate_limited_users[user_id]:
+                remaining_time = int(self.rate_limited_users[user_id] - current_time)
+                return True, f"用户触发速率限制，请等待 {remaining_time} 秒后再试"
+            else:
+                # 限制期已过，清除限制记录
+                del self.rate_limited_users[user_id]
+        
+        # 清理旧请求记录
+        self._cleanup_old_requests(user_id)
+        
+        # 检查当前请求频率
+        if user_id in self.user_request_history:
+            request_count = len(self.user_request_history[user_id])
+            if request_count >= self.rate_limit_frequency:
+                # 触发速率限制
+                limit_duration = self._convert_time_to_seconds(
+                    self.rate_limit_duration, self.rate_limit_duration_unit
+                )
+                limit_end_time = current_time + limit_duration
+                self.rate_limited_users[user_id] = limit_end_time
+                
+                logger.info(f"[Authenticator] 用户 {user_id} 触发速率限制，限制时长: {limit_duration} 秒")
+                return True, f"加群请求过于频繁，请等待 {limit_duration} 秒后再试"
+        
+        return False, None
+    
+    def _record_user_request(self, user_id: str) -> None:
+        """
+        记录用户的加群请求
+        
+        Args:
+            user_id: 用户ID
+        """
+        if self.rate_limit_frequency <= 0:
+            return
+            
+        current_time = time.time()
+        
+        if user_id not in self.user_request_history:
+            self.user_request_history[user_id] = []
+        
+        self.user_request_history[user_id].append(current_time)
     
     def _is_valid_keyword_match(self, comment: str, keyword: str) -> bool:
         """

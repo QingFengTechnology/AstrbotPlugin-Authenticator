@@ -27,8 +27,8 @@ class AuthenticatorPlugin(Star):
         
         # 初始化模块 - 传递完整的配置对象
         self.recaptcha = ReCAPTCHA(config)
-        self.appreview = AppReview(config)
         self.ban_manager = BanManager(config)
+        self.appreview = AppReview(config, self.ban_manager)
         
         self._apply_monkey_patch()
         

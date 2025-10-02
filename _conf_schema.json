@@ -71,6 +71,63 @@
           }
         }
       },
+      "AutomaticReview_RateLimitConfig": {
+        "type": "object",
+        "description": "加群速率限制配置",
+        "items": {
+          "RateLimitConfig_ThresholdConfig": {
+            "type": "object",
+            "description": "加群速率限制阈值配置",
+            "items": {
+              "ThresholdConfig_Frequency": {
+                "type": "int",
+                "description": "加群速率限制阈值",
+                "default": 0,
+                "hint": "在单位时间内允许单用户的加群请求次数，超出将触发速率限制，设为0以禁用该功能。"
+              },
+              "ThresholdConfig_Time": {
+                "type": "int",
+                "description": "速率限制统计时间",
+                "default": 24,
+                "hint": "从首次申请开始计时，该时间段内的加群请求将被统计用于速率限制。时间结束后未达限制则重置，设为0则表示不重置时间。"
+              },
+              "RateLimitConfig_Unit": {
+                "type": "string",
+                "description": "统计时间单位",
+                "default": "Hour",
+                "options": [
+                  "Minute",
+                  "Hour",
+                  "Day"
+                ]
+              }
+            }
+          },
+          "RateLimitConfig_LimitConfig": {
+            "RateLimitConfig_Time": {
+              "type": "int",
+              "description": "加群速率限制时间",
+              "default": 12,
+              "hint": "当用户触发速率限制后，要等待多久才允许其再次加群，在此期间内该用户的加群请求将被强制拒绝。"
+            },
+            "RateLimitConfig_Unit": {
+              "type": "string",
+              "description": "加群速率限制时间单位",
+              "default": "Hour",
+              "options": [
+                "Minute",
+                "Hour",
+                "Day"
+              ]
+            },
+            "RateLimitConfig_AutoBan": {
+              "type": "bool",
+              "description": "自动拉黑该用户",
+              "hint": "触发速率限制的用户将被直接添加至黑名单，你可以在下方黑名单配置中移除。"
+            }
+          }
+        }
+      },
       "AutomaticReview_DelaySeconds": {
         "type": "int",
         "description": "延迟处理时间",
