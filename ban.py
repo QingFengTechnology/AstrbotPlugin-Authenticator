@@ -81,7 +81,31 @@ class BanManager:
         """
         if user_id not in self.banned_users:
             self.banned_users.add(user_id)
-            logger.info(f"[Authenticator] 用户 {user_id} 已添加到黑名单")
+            
+            # 保存到配置文件
+            try:
+                # 获取当前黑名单配置
+                ban_config = self.config["Ban"]
+                ban_config_settings = ban_config["BanConfig"]
+                
+                # 获取当前黑名单列表
+                ban_list = ban_config_settings.get("BanConfig_List", [])
+                
+                # 添加新用户到列表
+                if user_id not in ban_list:
+                    ban_list.append(user_id)
+                    ban_config_settings["BanConfig_List"] = ban_list
+                    
+                    # 保存配置
+                    self.config.save_config()
+                    logger.info(f"[Authenticator] 用户 {user_id} 已添加到黑名单并保存到配置")
+                else:
+                    logger.info(f"[Authenticator] 用户 {user_id} 已在配置黑名单中")
+                    
+            except Exception as e:
+                logger.error(f"[Authenticator] 保存黑名单配置失败: {e}")
+                return False
+                
             return True
         return False
     
@@ -97,7 +121,31 @@ class BanManager:
         """
         if user_id in self.banned_users:
             self.banned_users.remove(user_id)
-            logger.info(f"[Authenticator] 用户 {user_id} 已从黑名单移除")
+            
+            # 从配置文件中移除
+            try:
+                # 获取当前黑名单配置
+                ban_config = self.config["Ban"]
+                ban_config_settings = ban_config["BanConfig"]
+                
+                # 获取当前黑名单列表
+                ban_list = ban_config_settings.get("BanConfig_List", [])
+                
+                # 从列表中移除用户
+                if user_id in ban_list:
+                    ban_list.remove(user_id)
+                    ban_config_settings["BanConfig_List"] = ban_list
+                    
+                    # 保存配置
+                    self.config.save_config()
+                    logger.info(f"[Authenticator] 用户 {user_id} 已从黑名单移除并更新配置")
+                else:
+                    logger.info(f"[Authenticator] 用户 {user_id} 不在配置黑名单中")
+                    
+            except Exception as e:
+                logger.error(f"[Authenticator] 更新黑名单配置失败: {e}")
+                return False
+                
             return True
         return False
     
