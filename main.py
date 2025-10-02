@@ -54,7 +54,7 @@ class AuthenticatorPlugin(Star):
 
     @require_aiocqhttp_platform
     @filter.event_message_type(filter.EventMessageType.ALL)
-    async def handle_event(self, event: AstrMessageEvent):
+    async def handle_event(self, event: AstrMessageEvent, *args):
         """处理所有事件"""
         raw = event.message_obj.raw_message
         post_type = raw.get("post_type")
