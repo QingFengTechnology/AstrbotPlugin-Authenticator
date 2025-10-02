@@ -56,12 +56,15 @@ class AppReview:
         # 阈值配置
         self.rate_limit_frequency = threshold_config["ThresholdConfig_Frequency"]
         self.rate_limit_time = threshold_config["ThresholdConfig_Time"]
-        self.rate_limit_unit = threshold_config["RateLimitConfig_Unit"]
+        self.rate_limit_unit = threshold_config["RateLimitConfig_Unit"]  # 统计时间单位
         
         # 限制配置
         self.rate_limit_duration = limit_config["RateLimitConfig_Time"]
-        self.rate_limit_duration_unit = limit_config["RateLimitConfig_Unit"]
+        self.rate_limit_duration_unit = limit_config["RateLimitConfig_Unit"]  # 限制时长单位
         self.rate_limit_auto_ban = limit_config["RateLimitConfig_AutoBan"]
+        
+        # 拒绝理由配置
+        self.rate_limit_reject_reason = rate_limit_config["RateLimitConfig_RejectReason"]
         
         # 获取其他配置
         self.delay_seconds = automatic_review["AutomaticReview_DelaySeconds"]
@@ -352,7 +355,9 @@ class AppReview:
         if user_id in self.rate_limited_users:
             if current_time < self.rate_limited_users[user_id]:
                 remaining_time = int(self.rate_limited_users[user_id] - current_time)
-                return True, f"用户触发速率限制，请等待 {remaining_time} 秒后再试"
+                # 使用配置的拒绝理由，并替换时间占位符
+                reason = self._format_reject_reason(remaining_time, self.rate_limit_duration_unit)
+                return True, reason
             else:
                 # 限制期已过，清除限制记录
                 del self.rate_limited_users[user_id]
@@ -372,9 +377,43 @@ class AppReview:
                 self.rate_limited_users[user_id] = limit_end_time
                 
                 logger.info(f"[Authenticator] 用户 {user_id} 触发速率限制，限制时长: {limit_duration} 秒")
-                return True, f"加群请求过于频繁，请等待 {limit_duration} 秒后再试"
+                # 使用配置的拒绝理由，并替换时间占位符
+                reason = self._format_reject_reason(limit_duration, self.rate_limit_duration_unit)
+                return True, reason
         
         return False, None
+    
+    def _format_reject_reason(self, time_in_seconds: int, time_unit: str) -> str:
+        """
+        格式化拒绝理由，根据配置的时间单位自动转换时间，并替换占位符
+        
+        Args:
+            time_in_seconds: 时间（秒）
+            time_unit: 时间单位（Minute/Hour/Day）
+            
+        Returns:
+            格式化后的拒绝理由
+        """
+        # 根据时间单位转换时间值
+        if time_unit == "Minute":
+            time_value = max(1, time_in_seconds // 60)  # 转换为分钟，至少1分钟
+            unit_display = "分钟"
+        elif time_unit == "Hour":
+            time_value = max(1, time_in_seconds // 3600)  # 转换为小时，至少1小时
+            unit_display = "小时"
+        elif time_unit == "Day":
+            time_value = max(1, time_in_seconds // 86400)  # 转换为天，至少1天
+            unit_display = "天"
+        else:
+            time_value = time_in_seconds  # 默认按秒处理
+            unit_display = "秒"
+        
+        # 替换占位符
+        reason = self.rate_limit_reject_reason
+        reason = reason.replace("{time}", str(time_value))
+        reason = reason.replace("{unit}", unit_display)
+        
+        return reason
     
     def _record_user_request(self, user_id: str) -> None:
         """

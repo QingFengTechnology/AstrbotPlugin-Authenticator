@@ -103,6 +103,12 @@
               }
             }
           },
+          "RateLimitConfig_RejectReason": {
+            "type": "string",
+            "description": "拒绝申请时使用的理由",
+            "default": "申请被拒绝，请等待{time}{unit}后再试。",
+            "hint": "可用占位符：{time}、{unit}。"
+          },
           "RateLimitConfig_LimitConfig": {
             "type": "object",
             "description": "加群速率限制配置",
