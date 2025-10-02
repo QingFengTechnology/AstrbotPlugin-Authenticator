@@ -53,7 +53,7 @@ class AuthenticatorPlugin(Star):
             logger.warning(f"应用monkey patch失败: {e}")
 
     @filter.event_message_type(filter.EventMessageType.ALL)
-    async def handle_event(self, event: AstrMessageEvent, *args):
+    async def handle_event(self, event: AstrMessageEvent):
         """处理所有事件"""
         # 检查平台是否为 aiocqhttp
         from .function.utils import check_platform
