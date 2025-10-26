@@ -252,6 +252,11 @@ class AppReview:
                 logger.info(f"[Authenticator] 已根据等级限制（获取等级失败）拒绝用户 {user_id} 加入群 {group_id} 的请求。")
                 return
             
+            # 如果获取等级失败（返回0）且未启用拒绝无效等级用户，则忽略不做处理
+            if user_level == 0 and not self.reject_invalid_level:
+                logger.info(f"[Authenticator] 用户 {user_id} 的QQ等级获取失败，且未启用拒绝无效等级用户，忽略不做处理。")
+                return
+            
             # 如果成功获取到等级且等级低于限制
             if user_level > 0 and user_level < self.level_restriction:
                 if delay_seconds > 0:
