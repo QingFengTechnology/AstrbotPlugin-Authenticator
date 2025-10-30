@@ -1,5 +1,6 @@
-name: Authenticator
-version: v1.6.8
+name: astrbot_plugin_authenticator
+display_name: 多合一身份验证器
+version: v1.6.9
 author: QingFeng
-description: Astrbot的多合一身份验证插件，支持完整入群身份验证流程。
+desc: 一个强大的加群审核插件，支持自动处理加群、入群人机验证、黑名单等功能。
 repo: https://github.com/QingFengTechnology/AstrbotPlugin-Authenticator
