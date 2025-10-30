@@ -52,9 +52,10 @@ class AuthenticatorPlugin(Star):
         except Exception as e:
             logger.warning(f"应用monkey patch失败: {e}")
 
+    # 接收全部事件通过 if 处理其实很浪费性能，但是我们有黑名单不得不这么做。
     @filter.event_message_type(filter.EventMessageType.ALL)
     async def handle_event(self, event: AstrMessageEvent, *args, **kwargs):
-        """处理所有事件"""
+        """接收所有事件，根据内部规则针对收到的事件进行处理"""
         # 检查平台是否为 aiocqhttp
         from .function.utils import check_platform
         if not check_platform(event):
