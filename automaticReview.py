@@ -337,8 +337,8 @@ class AppReview:
             await self.approve_request(event, flag, False, reject_reason)
             logger.info(f"[Authenticator] 已根据速率限制拒绝用户 {user_id} 加入群 {group_id} 的请求。")
             
-            # 发送通报
-            await self.send_notification(event, user_id, group_id, reject_reason)
+            # 发送通报，使用通用描述性理由
+            await self.send_notification(event, user_id, group_id, "达到加群频率限制")
             
             # 如果启用了自动拉黑，将用户添加到黑名单
             if self.rate_limit_auto_ban and self.ban_manager:
@@ -371,8 +371,8 @@ class AppReview:
                     await asyncio.sleep(delay_seconds)
                 await self.approve_request(event, flag, False, self.level_reject_reason)
                 logger.info(f"[Authenticator] 已根据等级限制（获取等级失败）拒绝用户 {user_id} 加入群 {group_id} 的请求。")
-                # 发送通报
-                await self.send_notification(event, user_id, group_id, self.level_reject_reason)
+                # 发送通报，使用通用描述性理由
+                await self.send_notification(event, user_id, group_id, "QQ等级获取失败")
                 return
             
             # 如果获取等级失败（返回0）且未启用拒绝无效等级用户，则忽略不做处理
@@ -387,8 +387,8 @@ class AppReview:
                     await asyncio.sleep(delay_seconds)
                 await self.approve_request(event, flag, False, self.level_reject_reason)
                 logger.info(f"[Authenticator] 已根据等级限制拒绝用户 {user_id} 加入群 {group_id} 的请求。")
-                # 发送通报
-                await self.send_notification(event, user_id, group_id, self.level_reject_reason)
+                # 发送通报，使用通用描述性理由
+                await self.send_notification(event, user_id, group_id, "QQ等级不足")
                 return
         
         # 根据关键词处理，优先检查拒绝关键词
@@ -399,8 +399,8 @@ class AppReview:
                     await asyncio.sleep(delay_seconds)
                 await self.approve_request(event, flag, False, self.reject_reason)
                 logger.info(f"[Authenticator] 已根据关键词 '{keyword}' 拒绝用户 {user_id} 加入群 {group_id} 的请求。")
-                # 发送通报
-                await self.send_notification(event, user_id, group_id, self.reject_reason)
+                # 发送通报，使用通用描述性理由
+                await self.send_notification(event, user_id, group_id, "命中拒绝请求关键词")
                 return
         
         # 再检查是否包含接受关键词
@@ -420,8 +420,8 @@ class AppReview:
                 await asyncio.sleep(delay_seconds)
             await self.approve_request(event, flag, False, self.reject_reason)
             logger.info(f"[Authenticator] 已根据AutoReject配置拒绝用户 {user_id} 加入群 {group_id} 的请求。")
-            # 发送通报
-            await self.send_notification(event, user_id, group_id, self.reject_reason)
+            # 发送通报，使用通用描述性理由
+            await self.send_notification(event, user_id, group_id, "加群答案错误")
         else:
             # 不做任何处理，等待手动审核
             logger.info(f"[Authenticator] 用户 {user_id} 加入群 {group_id} 的请求未匹配到任意关键词，等待手动审核。")
