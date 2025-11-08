@@ -31,6 +31,9 @@ class ReCAPTCHA:
         # 从配置结构中获取配置（直接获取，没有items层）
         recaptcha_config = config["SimpleReCAPTCHA"]
         
+        # 检查是否启用人机验证功能
+        self.enabled = recaptcha_config.get("SimpleReCAPTCHA_Enable", False)
+        
         # 获取基础配置
         time_config = recaptcha_config["SimpleReCAPTCHA_TimeConfig"]
         self.verification_timeout = time_config["TimeConfig_VerificationTimeout"]
@@ -198,6 +201,10 @@ class ReCAPTCHA:
         Args:
             event: 消息事件
         """
+        # 检查功能是否启用
+        if not self.enabled:
+            return
+            
         # 平台检查：如果不是aiocqhttp平台，直接返回
         if not check_platform(event):
             return
@@ -268,6 +275,10 @@ class ReCAPTCHA:
         Args:
             event: 消息事件
         """
+        # 检查功能是否启用
+        if not self.enabled:
+            return
+            
         # 平台检查：如果不是aiocqhttp平台，直接返回
         if not check_platform(event):
             return
@@ -328,6 +339,10 @@ class ReCAPTCHA:
         Args:
             event: 消息事件
         """
+        # 检查功能是否启用
+        if not self.enabled:
+            return
+            
         # 平台检查：如果不是aiocqhttp平台，直接返回
         if not check_platform(event):
             return

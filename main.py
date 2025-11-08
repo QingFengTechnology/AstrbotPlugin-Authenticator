@@ -82,12 +82,15 @@ class AuthenticatorPlugin(Star):
         # 处理群消息和通知事件
         if post_type == "notice":
             if raw.get("notice_type") == "group_increase":
-                await self.recaptcha.process_new_member(event)
+                if self.recaptcha.enabled:
+                    await self.recaptcha.process_new_member(event)
             elif raw.get("notice_type") == "group_decrease":
-                await self.recaptcha.process_member_decrease(event)
+                if self.recaptcha.enabled:
+                    await self.recaptcha.process_member_decrease(event)
         
         elif post_type == "message" and raw.get("message_type") == "group":
-            await self.recaptcha.process_verification_message(event)
+            if self.recaptcha.enabled:
+                await self.recaptcha.process_verification_message(event)
 
     async def terminate(self):
         """插件被卸载/停用时调用"""
