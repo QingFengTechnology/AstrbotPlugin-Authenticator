@@ -8,10 +8,9 @@ from datetime import datetime
 from typing import Dict, Any, Optional, List, Tuple
 
 from astrbot.api import logger
-from astrbot.api.event import AstrMessageEvent
+from astrbot.api.event import AstrMessageEvent, filter
 
 from .function.apifox_model import ApifoxModel
-from .function.utils import check_platform
 
 
 class AppReview:
@@ -85,6 +84,7 @@ class AppReview:
         self.user_request_history: Dict[str, List[float]] = {}  # 用户ID -> 请求时间戳列表
         self.rate_limited_users: Dict[str, float] = {}  # 用户ID -> 限制结束时间戳
     
+    @filter.platform_adapter_type(filter.PlatformAdapterType.AIOCQHTTP)
     async def approve_request(self, event: AstrMessageEvent, flag: str, 
                              approve: bool = True, reason: str = "") -> bool:
         """
@@ -100,20 +100,6 @@ class AppReview:
             操作是否成功
         """
         try:
-            # 检查是否为aiocqhttp平台
-            if not check_platform(event):
-                # 兼容其他平台的处理方式
-                if event.bot and hasattr(event.bot, "call_action"):
-                    await event.bot.call_action(
-                        "set_group_add_request",
-                        flag=flag,
-                        sub_type="add",
-                        approve=approve,
-                        reason=reason
-                    )
-                    return True
-                return False
-            
             # 使用NapCat API格式
             from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import AiocqhttpMessageEvent
             assert isinstance(event, AiocqhttpMessageEvent)
@@ -140,6 +126,7 @@ class AppReview:
             logger.error(f"[Authenticator] 处理群聊申请失败: {e}")
             return False
     
+    @filter.platform_adapter_type(filter.PlatformAdapterType.AIOCQHTTP)
     async def get_user_level(self, event: AstrMessageEvent, user_id: str) -> int:
         """
         获取用户的QQ等级
@@ -151,10 +138,6 @@ class AppReview:
         Returns:
             用户的QQ等级，如果获取失败返回0
         """
-        # 检查是否为aiocqhttp平台
-        if not check_platform(event):
-            return 0
-            
         try:
             # 使用NapCat API格式
             from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import AiocqhttpMessageEvent
@@ -230,6 +213,7 @@ class AppReview:
         except Exception as e:
             logger.error(f"[Authenticator] 发送拒绝加群通报失败: {e}")
     
+    @filter.platform_adapter_type(filter.PlatformAdapterType.AIOCQHTTP)
     async def _get_user_name(self, event: AstrMessageEvent, user_id: str) -> str:
         """
         获取用户昵称
@@ -241,10 +225,6 @@ class AppReview:
         Returns:
             用户昵称，如果获取失败返回用户ID
         """
-        # 检查是否为aiocqhttp平台
-        if not check_platform(event):
-            return str(user_id)
-            
         try:
             from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import AiocqhttpMessageEvent
             assert isinstance(event, AiocqhttpMessageEvent)
@@ -267,6 +247,7 @@ class AppReview:
             logger.warning(f"[Authenticator] 获取用户 {user_id} 昵称失败: {e}")
             return str(user_id)
     
+    @filter.platform_adapter_type(filter.PlatformAdapterType.AIOCQHTTP)
     async def _send_to_target(self, event: AstrMessageEvent, target: str, message: str) -> None:
         """
         向指定目标发送消息
@@ -277,11 +258,6 @@ class AppReview:
             message: 消息内容
         """
         try:
-            # 检查是否为aiocqhttp平台
-            if not check_platform(event):
-                logger.warning(f"[Authenticator] 非aiocqhttp平台暂不支持通报功能")
-                return
-                
             from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import AiocqhttpMessageEvent
             assert isinstance(event, AiocqhttpMessageEvent)
             client = event.bot

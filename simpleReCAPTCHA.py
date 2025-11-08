@@ -8,9 +8,9 @@ import re
 from typing import Dict, Any, Tuple, Optional
 
 from astrbot.api import logger
-from astrbot.api.event import AstrMessageEvent
+from astrbot.api.event import AstrMessageEvent, filter
 
-from .function.utils import safe_format, check_platform
+from .function.utils import safe_format
 
 
 class ReCAPTCHA:
@@ -194,6 +194,7 @@ class ReCAPTCHA:
         finally:
             self.pending.pop(uid, None)
     
+    @filter.platform_adapter_type(filter.PlatformAdapterType.AIOCQHTTP)
     async def process_new_member(self, event: AstrMessageEvent):
         """
         处理新成员入群
@@ -205,10 +206,6 @@ class ReCAPTCHA:
         if not self.enabled:
             return
             
-        # 平台检查：如果不是aiocqhttp平台，直接返回
-        if not check_platform(event):
-            return
-            
         raw = event.message_obj.raw_message
         uid = str(raw.get("user_id"))
         gid = raw.get("group_id")
@@ -218,6 +215,7 @@ class ReCAPTCHA:
         
         await self.start_verification_process(event, uid, gid, is_new_member=True)
     
+    @filter.platform_adapter_type(filter.PlatformAdapterType.AIOCQHTTP)
     async def start_verification_process(self, event: AstrMessageEvent, uid: str, 
                                        gid: int, is_new_member: bool):
         """
@@ -229,10 +227,6 @@ class ReCAPTCHA:
             gid: 群ID
             is_new_member: 是否是新成员
         """
-        # 平台检查：如果不是aiocqhttp平台，直接返回
-        if not check_platform(event):
-            return
-            
         if uid in self.pending:
             old_task = self.pending[uid].get("task")
             if old_task and not old_task.done():
@@ -268,6 +262,7 @@ class ReCAPTCHA:
 
         await event.bot.api.call_action("send_group_msg", group_id=gid, message=prompt_message)
     
+    @filter.platform_adapter_type(filter.PlatformAdapterType.AIOCQHTTP)
     async def process_verification_message(self, event: AstrMessageEvent):
         """
         处理群消息以进行验证
@@ -277,10 +272,6 @@ class ReCAPTCHA:
         """
         # 检查功能是否启用
         if not self.enabled:
-            return
-            
-        # 平台检查：如果不是aiocqhttp平台，直接返回
-        if not check_platform(event):
             return
             
         uid = str(event.get_sender_id())
@@ -332,6 +323,7 @@ class ReCAPTCHA:
             await self.start_verification_process(event, uid, gid, is_new_member=False)
             event.stop_event()
     
+    @filter.platform_adapter_type(filter.PlatformAdapterType.AIOCQHTTP)
     async def process_member_decrease(self, event: AstrMessageEvent):
         """
         处理成员离开
@@ -341,10 +333,6 @@ class ReCAPTCHA:
         """
         # 检查功能是否启用
         if not self.enabled:
-            return
-            
-        # 平台检查：如果不是aiocqhttp平台，直接返回
-        if not check_platform(event):
             return
             
         uid = str(event.message_obj.raw_message.get("user_id"))

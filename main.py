@@ -7,17 +7,6 @@ from astrbot.api.star import Context, Star
 from .automaticReview import AppReview
 from .simpleReCAPTCHA import ReCAPTCHA
 from .ban import BanManager
-from .function.utils import check_platform
-
-def require_aiocqhttp_platform(func):
-    """检查平台是否为 aiocqhttp"""
-    async def wrapper(self, event: AstrMessageEvent, *args, **kwargs):
-        # 检查平台是否为 aiocqhttp
-        if not check_platform(event):
-            return
-        # 如果是 aiocqhttp 平台，则执行原函数
-        return await func(self, event, *args, **kwargs)
-    return wrapper
 
 # 主类定义
 class AuthenticatorPlugin(Star):
@@ -53,14 +42,10 @@ class AuthenticatorPlugin(Star):
             logger.warning(f"应用monkey patch失败: {e}")
 
     # 接收全部事件通过 if 处理其实很浪费性能，但是我们有黑名单不得不这么做。
+    @filter.platform_adapter_type(filter.PlatformAdapterType.AIOCQHTTP)
     @filter.event_message_type(filter.EventMessageType.ALL)
     async def handle_event(self, event: AstrMessageEvent, *args, **kwargs):
         """接收所有事件，根据内部规则针对收到的事件进行处理"""
-        # 检查平台是否为 aiocqhttp
-        from .function.utils import check_platform
-        if not check_platform(event):
-            return
-        
         raw = event.message_obj.raw_message
         post_type = raw.get("post_type")
 

@@ -9,8 +9,6 @@ from typing import Dict, Any, Set, List, Optional
 from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent, filter
 
-from .function.utils import check_platform
-
 class BanManager:
     """黑名单管理器"""
     
@@ -219,6 +217,7 @@ class BanManager:
             
         return False
     
+    @filter.platform_adapter_type(filter.PlatformAdapterType.AIOCQHTTP)
     async def _reject_group_join_request(self, event: AstrMessageEvent, 
                                         flag: str, reason: str) -> bool:
         """
@@ -232,10 +231,6 @@ class BanManager:
         Returns:
             操作是否成功
         """
-        # 检查是否为aiocqhttp平台
-        if not check_platform(event):
-            return False
-            
         try:
             # 使用NapCat API格式
             from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import AiocqhttpMessageEvent
