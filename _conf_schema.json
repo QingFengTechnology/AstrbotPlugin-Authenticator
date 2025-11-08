@@ -174,7 +174,7 @@
           "NotificationConfig_MessageTemplate": {
             "type": "string",
             "description": "通报消息模板",
-            "default": "已拒绝 {user}({user_id}) 的加群请求，理由: {reason}。",
+            "default": "已拒绝 {user_name}({user_id}) 的加群请求，理由: {reason}。",
             "hint": "可用占位符：{group_id}，{user_name}，{user_id}，{reason}，{time}。"
           }
         }
