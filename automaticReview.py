@@ -4,6 +4,7 @@
 """
 import asyncio
 import time
+from datetime import datetime
 from typing import Dict, Any, Optional, List, Tuple
 
 from astrbot.api import logger
@@ -69,6 +70,16 @@ class AppReview:
         # 获取其他配置
         self.delay_seconds = automatic_review["AutomaticReview_DelaySeconds"]
         self.whitelist_groups = config["WhitelistGroups"]
+        
+        # 获取通报配置
+        notification_config = automatic_review.get("AutomaticReview_NotificationConfig", {})
+        target_config = notification_config.get("NotificationConfig_TargetConfig", {})
+        
+        # 通报目标配置
+        self.notification_targets = target_config.get("TargetConfig_NotificationTarget", [])
+        self.notification_target_type = target_config.get("TargetConfig_NotificationTargetType", "Group")
+        self.notification_message_template = notification_config.get("NotificationConfig_MessageTemplate", 
+                                                                   "已拒绝 {user}({user_id}) 的加群请求，理由: {reason}。")
         
         # 速率限制数据结构
         self.user_request_history: Dict[str, List[float]] = {}  # 用户ID -> 请求时间戳列表
@@ -180,6 +191,113 @@ class AppReview:
         logger.debug(f"[Authenticator] 最终返回默认等级: 0")
         return 0
 
+    async def send_notification(self, event: AstrMessageEvent, user_id: str, 
+                               group_id: str, reason: str) -> None:
+        """
+        发送拒绝加群通报
+        
+        Args:
+            event: 消息事件
+            user_id: 被拒绝的用户ID
+            group_id: 群ID
+            reason: 拒绝理由
+        """
+        # 如果没有配置通报目标，直接返回
+        if not self.notification_targets:
+            return
+            
+        try:
+            # 获取用户昵称
+            user_name = await self._get_user_name(event, user_id)
+            
+            # 格式化当前时间
+            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            
+            # 格式化通报消息
+            message = self.notification_message_template
+            message = message.replace("{group_id}", str(group_id))
+            message = message.replace("{user_name}", user_name)
+            message = message.replace("{user_id}", str(user_id))
+            message = message.replace("{reason}", reason)
+            message = message.replace("{time}", current_time)
+            
+            # 发送通报到所有配置的目标
+            for target in self.notification_targets:
+                await self._send_to_target(event, target, message)
+                
+            logger.info(f"[Authenticator] 已向 {len(self.notification_targets)} 个目标发送拒绝加群通报")
+            
+        except Exception as e:
+            logger.error(f"[Authenticator] 发送拒绝加群通报失败: {e}")
+    
+    async def _get_user_name(self, event: AstrMessageEvent, user_id: str) -> str:
+        """
+        获取用户昵称
+        
+        Args:
+            event: 消息事件
+            user_id: 用户ID
+            
+        Returns:
+            用户昵称，如果获取失败返回用户ID
+        """
+        # 检查是否为aiocqhttp平台
+        if not check_platform(event):
+            return str(user_id)
+            
+        try:
+            from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import AiocqhttpMessageEvent
+            assert isinstance(event, AiocqhttpMessageEvent)
+            client = event.bot
+            
+            # 调用NapCat API获取用户信息
+            payloads = {
+                "user_id": int(user_id),
+                "no_cache": True
+            }
+            
+            user_info = await client.api.call_action('get_stranger_info', **payloads)
+            
+            if user_info and "nickname" in user_info:
+                return user_info["nickname"]
+            else:
+                return str(user_id)
+                
+        except Exception as e:
+            logger.warning(f"[Authenticator] 获取用户 {user_id} 昵称失败: {e}")
+            return str(user_id)
+    
+    async def _send_to_target(self, event: AstrMessageEvent, target: str, message: str) -> None:
+        """
+        向指定目标发送消息
+        
+        Args:
+            event: 消息事件
+            target: 目标ID
+            message: 消息内容
+        """
+        try:
+            # 检查是否为aiocqhttp平台
+            if not check_platform(event):
+                logger.warning(f"[Authenticator] 非aiocqhttp平台暂不支持通报功能")
+                return
+                
+            from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import AiocqhttpMessageEvent
+            assert isinstance(event, AiocqhttpMessageEvent)
+            client = event.bot
+            
+            if self.notification_target_type == "Group":
+                # 发送到群聊
+                await client.call_action('send_group_msg', group_id=int(target), message=message)
+                logger.debug(f"[Authenticator] 已向群 {target} 发送通报消息")
+            else:
+                # 发送到私聊
+                await client.call_action('send_private_msg', user_id=int(target), message=message)
+                logger.debug(f"[Authenticator] 已向用户 {target} 发送通报消息")
+                
+        except Exception as e:
+            logger.error(f"[Authenticator] 向目标 {target} 发送通报消息失败: {e}")
+
     async def process_group_join_request(self, event: AstrMessageEvent, 
                                         request_data: Dict[str, Any]) -> None:
         """
@@ -219,6 +337,9 @@ class AppReview:
             await self.approve_request(event, flag, False, reject_reason)
             logger.info(f"[Authenticator] 已根据速率限制拒绝用户 {user_id} 加入群 {group_id} 的请求。")
             
+            # 发送通报
+            await self.send_notification(event, user_id, group_id, reject_reason)
+            
             # 如果启用了自动拉黑，将用户添加到黑名单
             if self.rate_limit_auto_ban and self.ban_manager:
                 try:
@@ -250,6 +371,8 @@ class AppReview:
                     await asyncio.sleep(delay_seconds)
                 await self.approve_request(event, flag, False, self.level_reject_reason)
                 logger.info(f"[Authenticator] 已根据等级限制（获取等级失败）拒绝用户 {user_id} 加入群 {group_id} 的请求。")
+                # 发送通报
+                await self.send_notification(event, user_id, group_id, self.level_reject_reason)
                 return
             
             # 如果获取等级失败（返回0）且未启用拒绝无效等级用户，则忽略不做处理
@@ -264,6 +387,8 @@ class AppReview:
                     await asyncio.sleep(delay_seconds)
                 await self.approve_request(event, flag, False, self.level_reject_reason)
                 logger.info(f"[Authenticator] 已根据等级限制拒绝用户 {user_id} 加入群 {group_id} 的请求。")
+                # 发送通报
+                await self.send_notification(event, user_id, group_id, self.level_reject_reason)
                 return
         
         # 根据关键词处理，优先检查拒绝关键词
@@ -274,6 +399,8 @@ class AppReview:
                     await asyncio.sleep(delay_seconds)
                 await self.approve_request(event, flag, False, self.reject_reason)
                 logger.info(f"[Authenticator] 已根据关键词 '{keyword}' 拒绝用户 {user_id} 加入群 {group_id} 的请求。")
+                # 发送通报
+                await self.send_notification(event, user_id, group_id, self.reject_reason)
                 return
         
         # 再检查是否包含接受关键词
@@ -293,6 +420,8 @@ class AppReview:
                 await asyncio.sleep(delay_seconds)
             await self.approve_request(event, flag, False, self.reject_reason)
             logger.info(f"[Authenticator] 已根据AutoReject配置拒绝用户 {user_id} 加入群 {group_id} 的请求。")
+            # 发送通报
+            await self.send_notification(event, user_id, group_id, self.reject_reason)
         else:
             # 不做任何处理，等待手动审核
             logger.info(f"[Authenticator] 用户 {user_id} 加入群 {group_id} 的请求未匹配到任意关键词，等待手动审核。")

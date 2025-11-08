@@ -143,6 +143,41 @@
         "description": "延迟处理时间",
         "hint": "处理入群申请前等待的秒数，设为0以禁用该功能。",
         "default": 0
+      },
+      "AutomaticReview_NotificationConfig": {
+        "type": "object",
+        "description": "通报设置",
+        "hint": "让机器人在拒绝加群请求时向特定群聊/用户发送相应通知。",
+        "items": {
+          "NotificationConfig_TargetConfig": {
+            "type": "object",
+            "description": "通报目标设置",
+            "items": {
+              "TargetConfig_NotificationTarget": {
+                "type": "list",
+                "description": "通报目标",
+                "default": [],
+                "hint": "指定要向哪些群聊或用户发送通报消息，留空以禁用该功能。"
+              },
+              "TargetConfig_NotificationTargetType": {
+                "type": "string",
+                "description": "通报目标类型",
+                "default": "Group",
+                "hint": "指定通报目标是用户还是群聊，Group表示群聊，Private表示用户。",
+                "options": [
+                  "Group",
+                  "Private"
+                ]
+              }
+            }
+          },
+          "NotificationConfig_MessageTemplate": {
+            "type": "string",
+            "description": "通报消息模板",
+            "default": "已拒绝 {user}({user_id}) 的加群请求，理由: {reason}。",
+            "hint": "可用占位符：{group_id}，{user_name}，{user_id}，{reason}，{time}。"
+          }
+        }
       }
     }
   },

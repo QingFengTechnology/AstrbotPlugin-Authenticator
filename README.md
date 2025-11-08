@@ -410,6 +410,13 @@
 - **{time}**：加群速率限制时间，可在`RateLimitConfig_Time`中设置该值。
 - **{Unit}**：加群速率限制时间单位，可在`RateLimitConfig_Unit`中设置。
 
+仅`NotificationConfig_MessageTemplate`可用：
+- **{group_id}**：加群请求事件所在的群号。
+- **{user_name}**：被拒绝加群的用户昵称。
+- **{user_id}**：被拒绝加群的用户 QQ 号。
+- **{reason}**：拒绝加群的理由。
+- **{time}**：拒绝加群的时间。
+
 ## 鸣谢
 
 - **[DeepSeek](https://chat.deepseek.com)** 本项目大部分的代码都是 AI 编写，后续维护也交由 AI 维护。
