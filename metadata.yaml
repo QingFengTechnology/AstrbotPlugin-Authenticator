@@ -1,6 +1,6 @@
 name: astrbot_plugin_authenticator
 display_name: 多合一身份验证器
-version: v1.6.10
+version: v1.10.0
 author: QingFeng
 desc: 一个强大的加群审核插件，支持自动处理加群、入群人机验证、黑名单等功能。
 repo: https://github.com/QingFengTechnology/AstrbotPlugin-Authenticator
