@@ -2,6 +2,10 @@
 
 这是一个强大的身份验证插件，旨在提供一个完整的身份验证流程系统以实现全自动筛选人机~~和部分智力低下的类人~~。
 
+> [!Caution]
+> DEPRECATED: 由于此插件可维护性过差，我们已停止维护此插件。\
+> 我们将重实现一个全新的插件以替代此插件：[AuthenticatorNext](https://github.com/QingFengTechnology/AstrbotPlugin-AuthenticatorNext)
+
 ## 功能
 
 - **详细的插件配置，可自定义绝大部分内容**
